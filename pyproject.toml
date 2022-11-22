@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "qsound"
+version = "0.1.0"
+description = ""
+authors = ["Patrick Dassier <pdassier@free.fr>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+pyside6 = "^6.4.0.1"
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.6.0"
+flake8 = "^5.0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

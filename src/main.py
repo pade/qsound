@@ -1,9 +1,8 @@
 import sys
-from PySide6.QtWidgets import QApplication
-from mainwindow import MainWindow
 
-APP_NAME = 'QSound'
-ORGANIZATION = 'Pade'
+from PySide6.QtWidgets import QApplication
+
+from ui.mainwindow import MainWindow
 
 
 def main():

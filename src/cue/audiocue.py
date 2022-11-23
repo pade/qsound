@@ -1,4 +1,4 @@
-from PySide6.QtCore import QFile, QFileInfo, Slot, QUrl
+from PySide6.QtCore import QFileInfo, Slot, QUrl
 from PySide6.QtMultimedia import QMediaPlayer
 from cue.volume import Volume
 
@@ -27,11 +27,16 @@ class AudioCue:
         else:
             self.__filename = filename
         player = QMediaPlayer()
+        player.errorOccurred.connect(self.printError)
         player.setSource(self.__filename)
         metadata = player.metaData()
         self.__duration = metadata.keys()
         print(self.__duration)
         self.__name = self.__filename.fileName()
+
+    @Slot(QMediaPlayer.Error, str)
+    def printError(self, error, msg):
+        print('Error :', error)
 
     def getStartsAt(self) -> float:
         return self.__startsAt

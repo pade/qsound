@@ -1,60 +1,74 @@
-from PySide6.QtCore import QFileInfo, Slot, QUrl
-from PySide6.QtMultimedia import QMediaPlayer
+from PySide6.QtCore import QFileInfo, Slot, QUrl, QObject
+from PySide6.QtMultimedia import QMediaPlayer, QMediaFormat, QAudioOutput
 from cue.volume import Volume
 
 
-class AudioCue:
+class AudioCue (QObject):
     def __init__(self, filename: QUrl | str) -> None:
-        self.__filename = ''
-        self.__name = ''
-        self.setSource(filename)
-        self.__startsAt = 0
-        self.__endsAt = 0
+        super().__init__()
+        self._filename = ''
+        self._name = ''
+        self._startsAt = 0
+        self._endsAt = 0
         self.__fadeInDuration = 0
         self.__fadeOutDuration = 0
-        self.__volume = Volume()
-        
+        self._volume = Volume()
+        self._player = QMediaPlayer()
+        self._audioOutput = QAudioOutput()
+        self._player.setAudioOutput(self._audioOutput)
+        self.setSource(filename)
+
+    @staticmethod
+    def getSupportedMimeTypes():
+        result = []
+        for f in QMediaFormat().supportedFileFormats(QMediaFormat.Decode):
+            mime_type = QMediaFormat(f).mimeType()
+            result.append(mime_type)
+        return result
+
     def isValid(self):
-        if not QFileInfo(self.__filename.toLocalFile()).exists():
+        if not QFileInfo(self._filename.toLocalFile()).exists():
             return False
         player = QMediaPlayer()
-        player.setSource(self.__filename)
+        player.setSource(self._filename)
         return player.hasAudio()
 
     def setSource(self, filename: QUrl | str) -> None:
         if isinstance(filename, str):
-            self.__filename = QUrl.fromLocalFile(filename)
+            self._filename = QUrl.fromLocalFile(filename)
         else:
-            self.__filename = filename
-        player = QMediaPlayer()
-        player.errorOccurred.connect(self.printError)
-        player.setSource(self.__filename)
-        metadata = player.metaData()
+            self._filename = filename
+        self._player.setSource(self._filename)
+        metadata = self._player.metaData()
         self.__duration = metadata.keys()
-        print(self.__duration)
-        self.__name = self.__filename.fileName()
+        print(self.isValid())
+        self._name = self._filename.fileName()
+
+    def play(self):
+        self._audioOutput.setVolume(0.25)
+        self._player.play()
 
     @Slot(QMediaPlayer.Error, str)
     def printError(self, error, msg):
         print('Error :', error)
 
     def getStartsAt(self) -> float:
-        return self.__startsAt
+        return self._startsAt
 
     @Slot(float)
     def setStartsAs(self, value: float) -> None:
         if (value < 0.0):
             value = 0.0
-        self.__startsAt = value
+        self._startsAt = value
 
     def getEndsAt(self) -> float:
-        return self.__endsAt
+        return self._endsAt
 
     @Slot(float)
     def setEndsAt(self, value: float) -> None:
         if (value < 0.0):
             value = 0.0
-        self.__endsAt = value
+        self._endsAt = value
 
     def getFadeInDuration(self) -> float:
         return self.__fadeInDuration
@@ -75,15 +89,15 @@ class AudioCue:
         self.__fadeOutDuration = value
 
     def getVolume(self) -> Volume:
-        return self.__volume
+        return self._volume
 
     @Slot(Volume)
     def setVolume(self, volume: Volume) -> None:
-        self.__volume = volume
+        self._volume = volume
 
     def getName(self) -> str:
-        return self.__name
+        return self._name
 
     @Slot(str)
     def name(self, value: str) -> None:
-        self.__name = value
+        self._name = value

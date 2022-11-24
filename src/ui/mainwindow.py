@@ -5,6 +5,7 @@ from PySide6.QtGui import QAction, QKeySequence, QCloseEvent
 from typing import Optional
 from settings import settings
 from ui.mediafiledialog import MediaFileDialog
+from cue.audiocue import AudioCue
 
 
 class MainWindow (QMainWindow):
@@ -16,7 +17,6 @@ class MainWindow (QMainWindow):
     ) -> None:
         super().__init__(parent, flags)
         self.createMenuBar()
-        self.setLayout(QHBoxLayout())
         self.setWindowTitle('QSound')
 
     def createMenuBar(self):
@@ -46,16 +46,14 @@ class MainWindow (QMainWindow):
 
     def mediaFileSelector(self):
         filesName = MediaFileDialog(self).getFilenames()
-        # for file in filesName:
+        self._audiocue = AudioCue(filename=filesName[0])
+        self._audiocue.play()
             
     def writeSettings(self):
-        settings.beginGroup('MainWindow')
         settings.setValue('size', self.size())
         settings.setValue('position', self.pos())
-        settings.endGroup()
 
     def readSettings(self):
-        settings.beginGroup('MainWindow')
         size = settings.value('size')
         if (size is None):
             screen = QApplication.primaryScreen()
@@ -64,7 +62,6 @@ class MainWindow (QMainWindow):
         pos = settings.value('position')
         if (pos is not None):
             self.move(pos)
-        settings.endGroup
 
     def mayBeSaved(self):
         msg = QMessageBox.warning(

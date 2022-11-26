@@ -24,4 +24,7 @@ class Volume:
         self.__right = value
 
     def getVolume(self) -> tuple[float, float]:
-        return (self.__left, self.__right)
+        return (self.left, self.right)
+
+    def __str__(self) -> str:
+        return f'left: {self.left}, right: {self.right}'

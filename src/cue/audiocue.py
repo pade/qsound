@@ -1,9 +1,10 @@
 from PySide6.QtCore import QFileInfo, Slot, QUrl, QObject
 from PySide6.QtMultimedia import QMediaPlayer, QMediaFormat, QAudioOutput
 from cue.volume import Volume
+from cue.basecue import BaseCue
 
 
-class AudioCue (QObject):
+class AudioCue (BaseCue):
     def __init__(self, filename: QUrl | str) -> None:
         super().__init__()
         self._filename = ''
@@ -27,7 +28,7 @@ class AudioCue (QObject):
         return result
 
     def isValid(self):
-        if not QFileInfo(self._filename.toLocalFile()).exists():
+        if not QFileInfo(self.getFullPath()).exists():
             return False
         player = QMediaPlayer()
         player.setSource(self._filename)
@@ -39,13 +40,12 @@ class AudioCue (QObject):
         else:
             self._filename = filename
         self._player.setSource(self._filename)
-        metadata = self._player.metaData()
-        self.__duration = metadata.keys()
-        print(self.isValid())
+        # metadata = self._player.metaData()
+        # self.__duration = metadata.keys()
+        # print(self.isValid())
         self._name = self._filename.fileName()
 
     def play(self):
-        self._audioOutput.setVolume(0.25)
         self._player.play()
 
     @Slot(QMediaPlayer.Error, str)
@@ -98,6 +98,9 @@ class AudioCue (QObject):
     def getName(self) -> str:
         return self._name
 
+    def getFullDescription(self) -> str:
+        return self._filename.toLocalFile()
+
     @Slot(str)
-    def name(self, value: str) -> None:
+    def setName(self, value: str) -> None:
         self._name = value

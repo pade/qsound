@@ -1,15 +1,38 @@
-from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QWidget
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QListView
+from PySide6.QtWidgets import QApplication, QMessageBox, QAbstractItemView
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction, QKeySequence, QCloseEvent
 from typing import Optional
 from settings import settings
 from ui.mediafiledialog import MediaFileDialog
 from cue.audiocue import AudioCue
+from ui.audiocuewidget import AudioCueWidget
+from ui.cuewidget import CueWidget
+from engine.cuelist import CueListModel
+
+
+class MainWidget (QWidget):
+    def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
+        super().__init__(parent, f)
+        vBox = QVBoxLayout()
+        self._cuelistModel = CueListModel()
+        self._cueListView = QListView()
+        self._cueListView.setDragEnabled(True)
+        self._cueListView.setAcceptDrops(True)
+        self._cueListView.setDropIndicatorShown(True)
+        self._cueListView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self._cueListView.setAlternatingRowColors(True)
+        self._cueListView.setModel(self._cuelistModel)
+        self.audioCueWidget = AudioCueWidget()
+        vBox.addWidget(self._cueListView)
+        vBox.addWidget(self.audioCueWidget)
+        self.setLayout(vBox)
+
+    def addCue(self, cue: AudioCue) -> None:
+        self._cuelistModel.addCue(cue)
 
 
 class MainWindow (QMainWindow):
-
     def __init__(
         self,
         parent: Optional[QWidget] = None,
@@ -19,6 +42,9 @@ class MainWindow (QMainWindow):
         self.createMenuBar()
         self.setWindowTitle('QSound')
 
+        self.mainWidget = MainWidget()
+        self.setCentralWidget(self.mainWidget)
+        
     def createMenuBar(self):
         newAction = QAction(self.tr('New...'), self)
         newAction.setShortcuts(QKeySequence.StandardKey.New)
@@ -46,8 +72,17 @@ class MainWindow (QMainWindow):
 
     def mediaFileSelector(self):
         filesName = MediaFileDialog(self).getFilenames()
-        self._audiocue = AudioCue(filename=filesName[0])
-        self._audiocue.play()
+        if filesName is not None:
+            for file in filesName:
+                self.mainWidget.addCue(AudioCue(file))
+                # self.mainWidget.cuelistModel.cuelist.append(AudioCue(file))
+                # cue = CueWidget(self.mainWidget)
+                # cue.order.setText(str(len(self.mainWidget.cuelistModel)))
+                # cue.name.setText(file.fileName())
+                # item = QListWidgetItem()
+                # item.setSizeHint(cue.sizeHint())
+                # self.mainWidget._cueListView.addItem(item)
+                # self.mainWidget._cueListView.setItemWidget(item, cue)
             
     def writeSettings(self):
         settings.setValue('size', self.size())

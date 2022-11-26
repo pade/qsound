@@ -10,6 +10,6 @@ class TestAudioCue (unittest.TestCase):
         cls.__dir = Path(__file__).parent
 
     def test_loadFile(self):
-        fullpath = Path(self.__dir, './sample-1.mp3')
+        fullpath = Path(self.__dir, '/sample-1.mp3')
         audio = AudioCue(str(fullpath))
         self.assertTrue(audio.isValid())

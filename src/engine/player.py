@@ -1,47 +1,63 @@
 from PySide6.QtCore import QObject, QUrl, QThread, Signal, Slot
 from typing import Optional
-from pyaudio import PyAudio, paContinue
+from pyaudio import PyAudio
 from pydub import AudioSegment
 from pydub.utils import make_chunks
 
 
 class Player (QThread):
 
-    reader = Signal(int, name="elapsedTime")
+    elapsedTime = Signal(int, name='elapsedTime')
+    CHUNK_SIZE = 100
 
-    def __init__(self, filename: QUrl, parent: Optional[QObject] = None) -> None:
+    def __init__(self, audio: AudioSegment, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._elapsedTime = 0
-        self._filename = filename
-
-    def _setUp(self, filename: QUrl) -> None:
-        self._audio = AudioSegment.from_file(filename.toLocalFile())
-        self.player = PyAudio()
-        self._stream = self.player.open(
-            format=self.player.get_format_from_width(self._audio.sample_width),
+        self._audio = audio
+        self._pause = False
+        self._player = PyAudio()
+        self._stream = self._player.open(
+            format=self._player.get_format_from_width(self._audio.sample_width),
             channels=self._audio.channels,
             rate=self._audio.frame_rate,
             output=True,
-            # stream_callback=self._loaded_frames
         )
 
     def run(self):
-        self._setUp(self._filename)
         try:
-            for chunk in make_chunks(self._audio, 100):
-                if self.isInterruptionRequested():
-                    break
-                self._stream.write(chunk.raw_data)
-                self._elapsedTime += 100
-                self.reader.emit(self._elapsedTime)
-
+            # for chunk in make_chunks(self._audio, 100):
+            #     if self.isInterruptionRequested():
+            #         break
+            #     self._stream.write(chunk.raw_data)
+            #     self._elapsedTime += 100
+            #     self.reader.emit(self._elapsedTime)
+            while not self.isInterruptionRequested():
+                if not self._pause:
+                    data = self._audio[self._elapsedTime:self._elapsedTime+self.CHUNK_SIZE]
+                    self.elapsedTime.emit(len(data) + self._elapsedTime)
+                    if len(data) == 0:
+                        self.requestInterruption()
+                    else:
+                        self._stream.write(data.raw_data)
+                        self._elapsedTime += self.CHUNK_SIZE
+                else:
+                    self.msleep(50)
         finally:
             self._stream.stop_stream()
             self._stream.close()
-            self.player.terminate()
+            self._player.terminate()
 
     def pause(self):
-        pass
+        self._pause = True
+
+    def start(self):
+        if self.isRunning():
+            self._pause = False
+        elif self.isFinished():
+            # Thread already finished, nothing to do
+            return
+        else:
+            super().start()
 
     def stop(self):
         self.requestInterruption()

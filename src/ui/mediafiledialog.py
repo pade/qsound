@@ -25,4 +25,4 @@ class MediaFileDialog (QObject):
         if self.__fileDialog.exec():
             directory = self.__fileDialog.directory()
             self.__settings.setValue(self.SETTING_KEY, directory.absolutePath())
-            return self.__fileDialog.selectedUrls()
+            return self.__fileDialog.selectedFiles()

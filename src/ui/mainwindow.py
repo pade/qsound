@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QListView
+from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QListView, QHBoxLayout
 from PySide6.QtWidgets import QApplication, QMessageBox, QAbstractItemView, QSizePolicy
-from PySide6.QtCore import QSize, Qt, QModelIndex, Slot, Signal, QTime
+from PySide6.QtCore import QSize, Qt, QModelIndex, Slot, QTime
 from PySide6.QtGui import QAction, QKeySequence, QCloseEvent
 from typing import Optional
 from settings import settings
@@ -8,12 +8,14 @@ from ui.mediafiledialog import MediaFileDialog
 from cue.audiocue import AudioCue
 from ui.audiocuewidget import AudioCueWidget
 from engine.cuelist import CueListModel
+from ui.commands import CommandsWidget
 
 
 class MainWidget (QWidget):
     def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
         super().__init__(parent, f)
         vBox = QVBoxLayout()
+        hBox = QHBoxLayout()
         self._cueListModel = CueListModel()
         self._cueListView = QListView()
         self._cueListView.setDragEnabled(True)
@@ -26,7 +28,12 @@ class MainWidget (QWidget):
         self._cueListView.clicked.connect(self.selectedCue)
         self.audioCueWidget = AudioCueWidget()
         self.audioCueWidget.setEnabled(False)
-        vBox.addWidget(self._cueListView)
+        self.commands = CommandsWidget()
+        hBox.addWidget(self._cueListView)
+        hBox.addWidget(self.commands)
+        w = QWidget()
+        w.setLayout(hBox)
+        vBox.addWidget(w)
         vBox.addWidget(self.audioCueWidget)
         self.setLayout(vBox)
 
@@ -36,10 +43,16 @@ class MainWidget (QWidget):
         if self._cueListModel.currentIndex.isValid():
             lastCue = self._cueListModel.getCue(self._cueListModel.currentIndex)
             self.audioCueWidget.volume.disconnect(lastCue)
+            self.commands.playBtn.disconnect(lastCue)
+            self.commands.pauseBtn.disconnect(lastCue)
+            self.commands.stopBtn.disconnect(lastCue)
         self._cueListModel.currentIndex = index
         cue = self._cueListModel.getCue(index)
         self.audioCueWidget.volume.setVolume(cue.getVolume())
         self.audioCueWidget.volume.volumeChanged.connect(cue.setVolume)
+        self.commands.playBtn.pressed.connect(cue.play)
+        self.commands.pauseBtn.pressed.connect(cue.pause)
+        self.commands.stopBtn.pressed.connect(cue.stop)
     
     def addCue(self, cue: AudioCue) -> None:
         self._cueListModel.addCue(cue)

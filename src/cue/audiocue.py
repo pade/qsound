@@ -1,7 +1,8 @@
-from PySide6.QtCore import QFileInfo, Slot, QUrl, QObject
+from PySide6.QtCore import QFileInfo, Slot, QUrl
 from PySide6.QtMultimedia import QMediaPlayer, QMediaFormat, QAudioOutput
 from cue.volume import Volume
 from cue.basecue import BaseCue
+from engine.player import Player
 
 
 class AudioCue (BaseCue):
@@ -14,11 +15,11 @@ class AudioCue (BaseCue):
         self.__fadeInDuration = 0
         self.__fadeOutDuration = 0
         self._volume = Volume()
-        self._player = QMediaPlayer()
-        self._audioOutput = QAudioOutput()
-        self._player.setAudioOutput(self._audioOutput)
+        # self._player = QMediaPlayer()
+        # self._audioOutput = QAudioOutput()
+        # self._player.setAudioOutput(self._audioOutput)
         self.setSource(filename)
-
+        
     @staticmethod
     def getSupportedMimeTypes():
         result = []
@@ -28,25 +29,38 @@ class AudioCue (BaseCue):
         return result
 
     def isValid(self):
-        if not QFileInfo(self.getFullPath()).exists():
+        if not QFileInfo(self._filename.toLocalFile()).exists():
             return False
-        player = QMediaPlayer()
-        player.setSource(self._filename)
-        return player.hasAudio()
+        return self.player.hasAudio()
 
     def setSource(self, filename: QUrl | str) -> None:
         if isinstance(filename, str):
             self._filename = QUrl.fromLocalFile(filename)
         else:
             self._filename = filename
-        self._player.setSource(self._filename)
+        self.player = Player(self._filename)
+        self.player.elapsedTime.connect(self.duration)
         # metadata = self._player.metaData()
         # self.__duration = metadata.keys()
         # print(self.isValid())
         self._name = self._filename.fileName()
+        self.play()
 
+    @Slot(int)
+    def duration(self, ms: int) -> None:
+        print(f'{ms/1000.0}')
+
+    @Slot()
+    def stop(self):
+        self.player.stop()
+
+    @Slot()
     def play(self):
-        self._player.play()
+        self.player.start()
+
+    @Slot()
+    def pause(self):
+        self.player.pause()
 
     @Slot(QMediaPlayer.Error, str)
     def printError(self, error, msg):
@@ -104,3 +118,6 @@ class AudioCue (BaseCue):
     @Slot(str)
     def setName(self, value: str) -> None:
         self._name = value
+
+    def __str__(self) -> str:
+        return f'{self.getName()}'

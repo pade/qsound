@@ -1,6 +1,6 @@
 from PySide6.QtCore import (
-    QAbstractListModel, QObject,
-    Qt, QModelIndex, QPersistentModelIndex
+    QAbstractListModel, QObject, Qt,
+    QModelIndex, QPersistentModelIndex
 )
 from typing import Optional, Union
 from cue.audiocue import AudioCue
@@ -14,6 +14,7 @@ class CueListModel (QAbstractListModel):
     ) -> None:
         super().__init__(parent)
         self._cuelist = cuelist or []
+        self.currentIndex = QModelIndex()
 
     def rowCount(self, index: Union[QModelIndex, QPersistentModelIndex]) -> int:
         return len(self._cuelist)
@@ -63,3 +64,12 @@ class CueListModel (QAbstractListModel):
         self._cuelist.insert(destinationChild, self._cuelist.pop(sourceRow))
         self.endMoveRows()
         return True
+
+    def getCue(self, index: QModelIndex) -> AudioCue:
+        if index.isValid():
+            return self._cuelist[index.row()]
+        else:
+            return None
+
+    def getAllCue(self) -> list[AudioCue]:
+        return self._cuelist

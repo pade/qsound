@@ -17,10 +17,15 @@ class VolumeWidget (QWidget):
         self.right = Slider()
         hbox.addWidget(self.left)
         hbox.addWidget(self.right)
-        self.right.slider.valueChanged.connect(self.setVolume)
-        self.left.slider.valueChanged.connect(self.setVolume)
+        self.right.slider.valueChanged.connect(self._volumeChange)
+        self.left.slider.valueChanged.connect(self._volumeChange)
 
-    @Slot(int)
-    def setVolume(self, value):
+    @Slot(Volume)
+    def setVolume(self, volume: Volume):
+        self.left.slider.setValue(volume.getVolume()[0])
+        self.right.slider.setValue(volume.getVolume()[1])
+
+    @Slot()
+    def _volumeChange(self):
         self.volume.emit(Volume(self.left.value(), self.right.value()))
 

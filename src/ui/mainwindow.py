@@ -1,13 +1,12 @@
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QListView
-from PySide6.QtWidgets import QApplication, QMessageBox, QAbstractItemView
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QApplication, QMessageBox, QAbstractItemView, QSizePolicy
+from PySide6.QtCore import QSize, Qt, QModelIndex, Slot, Signal, QTime
 from PySide6.QtGui import QAction, QKeySequence, QCloseEvent
 from typing import Optional
 from settings import settings
 from ui.mediafiledialog import MediaFileDialog
 from cue.audiocue import AudioCue
 from ui.audiocuewidget import AudioCueWidget
-from ui.cuewidget import CueWidget
 from engine.cuelist import CueListModel
 
 
@@ -15,24 +14,43 @@ class MainWidget (QWidget):
     def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
         super().__init__(parent, f)
         vBox = QVBoxLayout()
-        self._cuelistModel = CueListModel()
+        self._cueListModel = CueListModel()
         self._cueListView = QListView()
         self._cueListView.setDragEnabled(True)
         self._cueListView.setAcceptDrops(True)
         self._cueListView.setDropIndicatorShown(True)
         self._cueListView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._cueListView.setAlternatingRowColors(True)
-        self._cueListView.setModel(self._cuelistModel)
+        self._cueListView.setModel(self._cueListModel)
+        self._cueListView.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self._cueListView.clicked.connect(self.selectedCue)
         self.audioCueWidget = AudioCueWidget()
+        self.audioCueWidget.setEnabled(False)
         vBox.addWidget(self._cueListView)
         vBox.addWidget(self.audioCueWidget)
         self.setLayout(vBox)
 
+    @Slot(QModelIndex)
+    def selectedCue(self, index: QModelIndex):
+        self.audioCueWidget.setEnabled(True)
+        if self._cueListModel.currentIndex.isValid():
+            lastCue = self._cueListModel.getCue(self._cueListModel.currentIndex)
+            self.audioCueWidget.volume.disconnect(lastCue)
+        self._cueListModel.currentIndex = index
+        cue = self._cueListModel.getCue(index)
+        self.audioCueWidget.volume.setVolume(cue.getVolume())
+        self.audioCueWidget.volume.volumeChanged.connect(cue.setVolume)
+    
     def addCue(self, cue: AudioCue) -> None:
-        self._cuelistModel.addCue(cue)
+        self._cueListModel.addCue(cue)
+
+    def stop(self):
+        for cue in self._cueListModel.getAllCue():
+            cue.stop()
 
 
 class MainWindow (QMainWindow):
+
     def __init__(
         self,
         parent: Optional[QWidget] = None,
@@ -50,6 +68,7 @@ class MainWindow (QMainWindow):
         newAction.setShortcuts(QKeySequence.StandardKey.New)
         quitAction = QAction(self.tr('Quit'), self)
         quitAction.setShortcut(QKeySequence.StandardKey.Quit)
+        quitAction.triggered.connect(self.quit)
         saveAsAction = QAction(self.tr('Save as...'), self)
         saveAsAction.setShortcut(QKeySequence.StandardKey.SaveAs)
         saveAction = QAction(self.tr('Save'), self)
@@ -70,19 +89,12 @@ class MainWindow (QMainWindow):
         cueMenu = self.menuBar().addMenu(self.tr('Cues'))
         cueMenu.addAction(mediaCueAction)
 
+    @Slot()
     def mediaFileSelector(self):
         filesName = MediaFileDialog(self).getFilenames()
         if filesName is not None:
             for file in filesName:
                 self.mainWidget.addCue(AudioCue(file))
-                # self.mainWidget.cuelistModel.cuelist.append(AudioCue(file))
-                # cue = CueWidget(self.mainWidget)
-                # cue.order.setText(str(len(self.mainWidget.cuelistModel)))
-                # cue.name.setText(file.fileName())
-                # item = QListWidgetItem()
-                # item.setSizeHint(cue.sizeHint())
-                # self.mainWidget._cueListView.addItem(item)
-                # self.mainWidget._cueListView.setItemWidget(item, cue)
             
     def writeSettings(self):
         settings.setValue('size', self.size())
@@ -108,9 +120,23 @@ class MainWindow (QMainWindow):
         )
         return msg == QMessageBox.StandardButton.Ok
 
-    def closeEvent(self, event: QCloseEvent) -> None:
-        if (self.mayBeSaved()):
+    @Slot()
+    def quit(self):
+        if self.beforeQuit:
+            QApplication.quit()
+
+    def beforeQuit(self) -> bool:
+        if self.mayBeSaved():
+            self.mainWidget.stop()
+            someMsAfter = QTime.currentTime().addMSecs(500)
+            while QTime.currentTime() < someMsAfter:
+                pass
             self.writeSettings()
+            return True
+        return False
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self.beforeQuit():
             event.accept()
         else:
             event.ignore()

@@ -13,5 +13,6 @@ class CommandsWidget(QWidget):
         vBox.addWidget(self.playBtn)
         vBox.addWidget(self.pauseBtn)
         vBox.addWidget(self.stopBtn)
+        vBox.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.setLayout(vBox)
         

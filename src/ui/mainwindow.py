@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QListView, QHBoxLayout
-from PySide6.QtWidgets import QApplication, QMessageBox, QAbstractItemView, QSizePolicy
+from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QSize, Qt, QModelIndex, Slot, QTime
 from PySide6.QtGui import QAction, QKeySequence, QCloseEvent
 from typing import Optional
@@ -9,6 +9,7 @@ from cue.audiocue import AudioCue
 from ui.audiocuewidget import AudioCueWidget
 from engine.cuelist import CueListModel
 from ui.commands import CommandsWidget
+from ui.cuelistview import CueListView
 
 
 class MainWidget (QWidget):
@@ -17,24 +18,18 @@ class MainWidget (QWidget):
         vBox = QVBoxLayout()
         hBox = QHBoxLayout()
         self._cueListModel = CueListModel()
-        self._cueListView = QListView()
-        self._cueListView.setDragEnabled(True)
-        self._cueListView.setAcceptDrops(True)
-        self._cueListView.setDropIndicatorShown(True)
-        self._cueListView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self._cueListView.setAlternatingRowColors(True)
-        self._cueListView.setModel(self._cueListModel)
-        self._cueListView.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self._cueListView = CueListView(self._cueListModel)
         self._cueListView.clicked.connect(self.selectedCue)
         self.audioCueWidget = AudioCueWidget()
         self.audioCueWidget.setEnabled(False)
         self.commands = CommandsWidget()
-        hBox.addWidget(self._cueListView)
-        hBox.addWidget(self.commands)
+        hBox.addWidget(self._cueListView, 80)
+        hBox.addWidget(self.commands, 20)
         w = QWidget()
         w.setLayout(hBox)
-        vBox.addWidget(w)
-        vBox.addWidget(self.audioCueWidget)
+        vBox.addWidget(w, 66)
+        vBox.setContentsMargins()
+        vBox.addWidget(self.audioCueWidget, 33)
         self.setLayout(vBox)
 
     @Slot(QModelIndex)

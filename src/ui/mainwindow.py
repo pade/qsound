@@ -28,7 +28,6 @@ class MainWidget (QWidget):
         w = QWidget()
         w.setLayout(hBox)
         vBox.addWidget(w, 66)
-        vBox.setContentsMargins()
         vBox.addWidget(self.audioCueWidget, 33)
         self.setLayout(vBox)
 

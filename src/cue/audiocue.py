@@ -1,5 +1,5 @@
 from PySide6.QtCore import QFileInfo, Slot, Signal
-from PySide6.QtMultimedia import QMediaPlayer, QMediaFormat, QAudioOutput
+from PySide6.QtMultimedia import QMediaPlayer, QMediaFormat
 from cue.volume import Volume
 from cue.basecue import BaseCue
 from engine.player import Player
@@ -25,7 +25,7 @@ class AudioCue (BaseCue):
         self.__fadeInDuration = 0
         self.__fadeOutDuration = 0
         self._volume = Volume()
-        self.audio = None
+        self.audio: AudioSegment = None
         self.setSource(filename)
         
     @staticmethod
@@ -44,13 +44,22 @@ class AudioCue (BaseCue):
     def setSource(self, filename: str) -> None:
         self._filename = filename
         self.audio = AudioSegment.from_file(self._filename)
-        self.player = Player(self.audio)
+        self._mixAudio = AudioSegment.empty() + self.audio
+        self.player = Player(self._mixAudio)
         self.cueInfo = CueInfo(
             QFileInfo(self._filename).fileName(),
             len(self.audio),
             0
         )
         self.player.elapsedTime.connect(self.duration)
+
+    def _computeAudio(self):
+        left, right = self.audio.split_to_mono()
+        left = left + self._volume.left
+        right = right + self._volume.right
+        rawData = AudioSegment.from_mono_audiosegments(left, right).raw_data
+        # Directly modify _data without to take into account modification while player is playing audio
+        self._mixAudio._data = rawData
 
     @Slot(int)
     def duration(self, elapsed: int) -> None:
@@ -111,6 +120,7 @@ class AudioCue (BaseCue):
     @Slot(Volume)
     def setVolume(self, volume: Volume) -> None:
         self._volume = volume
+        self._computeAudio()
 
     def getName(self) -> str:
         return self.cueInfo.name

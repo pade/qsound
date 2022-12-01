@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout
 from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional
-from ui.slider import Slider
+from ui.volumeslider import VolumeSlider
 from cue.volume import Volume
 
 
@@ -13,8 +13,8 @@ class VolumeWidget (QWidget):
         super().__init__(parent, f)
         hbox = QHBoxLayout()
         self.setLayout(hbox)
-        self.left = Slider()
-        self.right = Slider()
+        self.left = VolumeSlider()
+        self.right = VolumeSlider()
         hbox.addWidget(self.left)
         hbox.addWidget(self.right)
         self.right.slider.valueChanged.connect(self._volumeChange)

@@ -1,5 +1,4 @@
 from PySide6.QtCore import QFileInfo, Slot, Signal
-from PySide6.QtMultimedia import QMediaPlayer, QMediaFormat
 from cue.volume import Volume
 from cue.basecue import BaseCue
 from engine.player import Player
@@ -27,14 +26,6 @@ class AudioCue (BaseCue):
         self._volume = Volume()
         self.audio: AudioSegment = None
         self.setSource(filename)
-        
-    @staticmethod
-    def getSupportedMimeTypes():
-        result = []
-        for f in QMediaFormat().supportedFileFormats(QMediaFormat.Decode):
-            mime_type = QMediaFormat(f).mimeType()
-            result.append(mime_type)
-        return result
 
     def isValid(self):
         if not QFileInfo(self._filename).exists():

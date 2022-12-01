@@ -1,7 +1,16 @@
 class Volume:
-    def __init__(self, left: float = 0.0, right: float = 0.0) -> None:
+    def __init__(self, separate: bool = False, left: float = 0.0, right: float = 0.0) -> None:
         self.__left = left
         self.__right = right
+        self.__separate = separate
+
+    @property
+    def separate(self) -> bool:
+        return self.__separate
+
+    @separate.setter
+    def separate(self, state: bool) -> None:
+        self.__separate = state
 
     @property
     def left(self) -> float:

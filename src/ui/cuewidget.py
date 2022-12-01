@@ -22,6 +22,6 @@ class CueWidget(QWidget):
         hBox.addSpacerItem(spacer)
         hBox.addWidget(self.button)
         self.setLayout(hBox)
-    
+
     def getText(self) -> str:
         return f'{self.order.text()} - {self.name.text()}'

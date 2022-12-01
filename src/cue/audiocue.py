@@ -3,6 +3,7 @@ from cue.volume import Volume
 from cue.basecue import BaseCue
 from engine.player import Player
 from pydub import AudioSegment
+import array
 
 
 class CueInfo:
@@ -15,6 +16,7 @@ class CueInfo:
 class AudioCue (BaseCue):
 
     changedCue = Signal(CueInfo, name='changedCue')
+    audioSignalChanged = Signal(list, name='audioSignalChanged')
 
     def __init__(self, filename: str) -> None:
         super().__init__()
@@ -23,6 +25,7 @@ class AudioCue (BaseCue):
         self._endsAt = 0
         self.__fadeInDuration = 0
         self.__fadeOutDuration = 0
+        self._audioPoints = []
         self._volume = Volume()
         self.audio: AudioSegment = None
         self.setSource(filename)
@@ -43,6 +46,11 @@ class AudioCue (BaseCue):
             0
         )
         self.player.elapsedTime.connect(self.duration)
+        self._audioPoints = []
+        for idx, value in enumerate(self.audio.split_to_mono()[0].raw_data):
+            if idx % 1000 == 0:
+                self._audioPoints.append((idx, value))
+        self.audioSignalChanged.emit(self._audioPoints)
 
     def _computeAudio(self):
         left, right = self.audio.split_to_mono()
@@ -51,6 +59,9 @@ class AudioCue (BaseCue):
         rawData = AudioSegment.from_mono_audiosegments(left, right).raw_data
         # Directly modify _data without to take into account modification while player is playing audio
         self._mixAudio._data = rawData
+
+    def getAudioPoints(self):
+        return self._audioPoints
 
     @Slot(int)
     def duration(self, elapsed: int) -> None:

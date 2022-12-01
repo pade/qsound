@@ -40,10 +40,12 @@ class MainWidget (QWidget):
             self.commands.playBtn.disconnect(lastCue)
             self.commands.pauseBtn.disconnect(lastCue)
             self.commands.stopBtn.disconnect(lastCue)
+            lastCue.disconnect(self.audioCueWidget.sound)
         self._cueListModel.currentIndex = index
         cue = self._cueListModel.getCue(index)
         self.audioCueWidget.volume.setVolume(cue.getVolume())
         self.audioCueWidget.volume.volumeChanged.connect(cue.setVolume)
+        self.audioCueWidget.sound.setSeries(cue.getAudioPoints())
         self.commands.playBtn.pressed.connect(cue.play)
         self.commands.pauseBtn.pressed.connect(cue.pause)
         self.commands.stopBtn.pressed.connect(cue.stop)

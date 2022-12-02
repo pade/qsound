@@ -3,14 +3,28 @@ from cue.volume import Volume
 from cue.basecue import BaseCue
 from engine.player import Player
 from pydub import AudioSegment
+import numpy as np
 import array
+import math
 
 
 class CueInfo:
-    def __init__(self, name: str, duration: int, elapsed: int) -> None:
+    def __init__(self, name: str, duration: float, elapsed: int) -> None:
         self.name = name
         self.duration = duration
         self.elapsed = elapsed
+
+    def formatDuration(self):
+        return self.formatTime(self.duration)
+
+    def formatElapsed(self):
+        return self.formatTime(self.elapsed)
+
+    def formatTime(self, seconds):
+        minutes, sec = divmod(seconds, 60)
+        nbOfSeconds = math.floor(sec)
+        millisec = math.floor((sec - nbOfSeconds) * 100)
+        return f'{int(minutes):02d}:{int(nbOfSeconds):02d}:{int(millisec):02d}'
 
 
 class AudioCue (BaseCue):
@@ -27,7 +41,7 @@ class AudioCue (BaseCue):
         self.__fadeOutDuration = 0
         self._audioPoints = []
         self._volume = Volume()
-        self.audio: AudioSegment = None
+        self.audio = AudioSegment.empty()
         self.setSource(filename)
 
     def isValid(self):
@@ -42,15 +56,19 @@ class AudioCue (BaseCue):
         self.player = Player(self._mixAudio)
         self.cueInfo = CueInfo(
             QFileInfo(self._filename).fileName(),
-            len(self.audio),
+            self.audio.duration_seconds,
             0
         )
         self.player.elapsedTime.connect(self.duration)
-        self._audioPoints = []
-        for idx, value in enumerate(self.audio.split_to_mono()[0].raw_data):
-            if idx % 1000 == 0:
-                self._audioPoints.append((idx, value))
-        self.audioSignalChanged.emit(self._audioPoints)
+        audio1000Hz, _ = self.audio.set_frame_rate(1000).split_to_mono()
+        samples = audio1000Hz.get_array_of_samples()
+        buffer = array.array(audio1000Hz.array_type, samples)
+        time = np.linspace(
+            0,
+            len(buffer) / audio1000Hz.frame_rate,
+            num=len(buffer)
+        )
+        self._audioPoints = np.stack((time, buffer), axis=-1).tolist()
 
     def _computeAudio(self):
         left, right = self.audio.split_to_mono()

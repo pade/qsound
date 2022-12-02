@@ -4,7 +4,7 @@ from PySide6.QtCore import (
 )
 from typing import Optional, Union
 from cue.audiocue import AudioCue
-
+import datetime
 
 class CueListModel (QAbstractListModel):
     def __init__(
@@ -22,7 +22,7 @@ class CueListModel (QAbstractListModel):
     def data(self, index: Union[QModelIndex, QPersistentModelIndex], role: int) -> str:
         audiocue = self._cuelist[index.row()]
         if role == Qt.ItemDataRole.DisplayRole:
-            return f'{index.row()} - {audiocue.getName()}'
+            return f'{index.row()} - {audiocue.getName()} [{audiocue.cueInfo.formatDuration()}]'
         if role == Qt.ItemDataRole.ToolTipRole:
             return audiocue.getFullDescription()
 

@@ -25,12 +25,6 @@ class Player (QThread):
 
     def run(self):
         try:
-            # for chunk in make_chunks(self._audio, 100):
-            #     if self.isInterruptionRequested():
-            #         break
-            #     self._stream.write(chunk.raw_data)
-            #     self._elapsedTime += 100
-            #     self.reader.emit(self._elapsedTime)
             while not self.isInterruptionRequested():
                 if not self._pause:
                     data = self._audio[self._elapsedTime:self._elapsedTime+self.CHUNK_SIZE]

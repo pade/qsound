@@ -23,8 +23,10 @@ class ChartView (QChartView):
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         delta = 10.0
-        mousePos = QPointF(self.chart().mapToValue(event.localPos()).x(), event.localPos().y())
-        startPointPos = QPointF(self.startPos, self.chart().mapToPosition(QPoint(self.startPos, 0.0)).y())
+        mousePos = event.localPos()
+        startPointPos = QPointF(self.startPos, 0.0)
+        startPointPos = self.chart().mapToPosition(startPointPos)
+
         leftButton = event.buttons() == Qt.MouseButton.LeftButton
         if not self._moveInProgress:
             if self.pointsEqual(mousePos, startPointPos, delta) and leftButton:
@@ -33,8 +35,10 @@ class ChartView (QChartView):
             if leftButton:
                 serie = self.chart().series()[0]
                 lastPoint = serie.points()[-1]
-                if 0.0 <= mousePos.x() <= lastPoint.x():
-                    self.startPos = mousePos.x()
+                lastPoint = self.chart().mapToPosition(lastPoint)
+                firstPoint = (self.chart().mapToPosition(QPointF(0.0, 0.0))).x()
+                if firstPoint <= mousePos.x() <= lastPoint.x():
+                    self.startPos = (self.chart().mapToValue(mousePos)).x()
             else:
                 self._moveInProgress = False
 

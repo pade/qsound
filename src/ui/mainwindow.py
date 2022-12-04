@@ -45,7 +45,7 @@ class MainWidget (QWidget):
         cue = self._cueListModel.getCue(index)
         self.audioCueWidget.volume.setVolume(cue.getVolume())
         self.audioCueWidget.volume.volumeChanged.connect(cue.setVolume)
-        self.audioCueWidget.sound.setSeries(cue.getAudioPoints())
+        self.audioCueWidget.sound.setSeries(cue.getAudioPoints(), cue.getStartsAt(), cue.getEndsAt())
         cue.audioSignalChanged.connect(self.audioCueWidget.sound.setSeries)
         cue.changedCue.connect(self.audioCueWidget.sound.setPlayCursor)
         self.commands.playBtn.pressed.connect(cue.play)

@@ -30,7 +30,7 @@ class CueInfo:
 class AudioCue (BaseCue):
 
     changedCue = Signal(CueInfo, name='changedCue')
-    audioSignalChanged = Signal(list, name='audioSignalChanged')
+    audioSignalChanged = Signal(list, float, float, name='audioSignalChanged')
 
     def __init__(self, filename: str) -> None:
         super().__init__()
@@ -69,6 +69,8 @@ class AudioCue (BaseCue):
             num=len(buffer)
         )
         self._audioPoints = np.stack((time, buffer), axis=-1).tolist()
+        self.setStartsAs(0.0)
+        self.setEndsAt(time[-1])
 
     def _computeAudio(self):
         left, right = self.audio.split_to_mono()

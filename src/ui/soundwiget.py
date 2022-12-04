@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
-from PySide6.QtCore import Qt, Signal, Slot, QPointF, QPoint
+from PySide6.QtCore import Qt, Signal, Slot, QPointF, QPoint, QRect, QSize
 from PySide6.QtCharts import QChartView, QChart, QLineSeries, QValueAxis
 from PySide6.QtGui import QPainter, QPen, QColor, QMouseEvent
 from typing import Optional
@@ -8,39 +8,68 @@ from cue.audiocue import CueInfo
 
 class ChartView (QChartView):
 
+    changedStart = Signal(float, name='changedStart')
+    changedEnd = Signal(float, name='changedEnd')
+    unselectedColor = QColor(160, 160, 160)
+    unselectedColorWithTransparency = QColor(160, 160, 160, 120)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._playCursor = 0.0
         self._startPos = 0.0
         self._endPos = 0.0
-        self._moveInProgress = False
+        # self._firstPointX = 0.0
+        # self._lastPoint = 0.0
+        self._moveInProgress = {'start': False, 'end': False}
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.setMinimumWidth(800)
+        self.setMaximumHeight(200)
         self.setMouseTracking(True)
 
-    def pointsEqual(self, p1: QPointF, p2: QPointF, delta: float) -> bool:
-        return abs(p1.x() - p2.x()) <= abs(delta) and abs(p1.y() - p2.y()) <= abs(delta)
+    def setChart(self, chart: QChart, start: float, end: float) -> None:
+        super().setChart(chart)
+        r = chart.plotArea()
+        print(f'{r.left()} / {r.right()}')
+        # self._firstPoint = self.chart().mapToPosition(QPointF(r.left(), 0.0))
+        # self._lastPoint = self.chart().mapToPosition(QPointF(r.right(), 0.0))
+        self.startPos = start
+        self.endPos = end
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         delta = 10.0
         mousePos = event.localPos()
-        startPointPos = QPointF(self.startPos, 0.0)
-        startPointPos = self.chart().mapToPosition(startPointPos)
-
+        # print(f'mouse.localPos(): {mousePos.x()}, {mousePos.y()}')    
+        startPointPos = self.chart().mapToPosition(QPointF(self.startPos, 0.0))
+        endPointPos = self.chart().mapToPosition(QPointF(self.endPos, 0.0))
+        print(f'endPointPos: {endPointPos}')
+        serie = (self.chart().series())[0]
+        print(f'{serie.points()[-1]}')
         leftButton = event.buttons() == Qt.MouseButton.LeftButton
-        if not self._moveInProgress:
-            if self.pointsEqual(mousePos, startPointPos, delta) and leftButton:
-                self._moveInProgress = True
+        # print(f'Mouse [{mousePos.x(), mousePos.y()}] / startPoint [{startPointPos.x(), startPointPos.y()}] / endPoint [{endPointPos.x(), endPointPos.y()}]')
+        # print(f'LastPoint {self._lastPoint}')
+        # print(f'firstPoint {self._firstPointX}')
+        r = self.chart().plotArea()
+        if not self._moveInProgress['start']:
+            if abs(mousePos.x() - startPointPos.x()) < delta and leftButton:
+                self._moveInProgress['start'] = True
         else:
             if leftButton:
-                serie = self.chart().series()[0]
-                lastPoint = serie.points()[-1]
-                lastPoint = self.chart().mapToPosition(lastPoint)
-                firstPoint = (self.chart().mapToPosition(QPointF(0.0, 0.0))).x()
-                if firstPoint <= mousePos.x() <= lastPoint.x():
+                if r.left() <= mousePos.x() < (endPointPos.x() - delta):
                     self.startPos = (self.chart().mapToValue(mousePos)).x()
             else:
-                self._moveInProgress = False
+                self.changedStart.emit(self.startPos)
+                self._moveInProgress['start'] = False
+
+        if not self._moveInProgress['end']:
+            if abs(mousePos.x() - endPointPos.x()) < delta and leftButton:
+                self._moveInProgress['end'] = True
+        else:
+            if leftButton:
+                if (startPointPos.x() + delta) <= mousePos.x() <= r.right():
+                    self.endPos = (self.chart().mapToValue(mousePos)).x()
+            else:
+                self.changedEnd.emit(self.endPos)
+                self._moveInProgress['end'] = False
 
     @property
     def playCursor(self) -> float:
@@ -52,35 +81,74 @@ class ChartView (QChartView):
         self.viewport().update()
 
     @property
-    def startPos(self) -> QPoint:
+    def startPos(self) -> float:
         return self._startPos
 
     @startPos.setter
-    def startPos(self, value: QPoint) -> None:
+    def startPos(self, value: float) -> None:
         self._startPos = value
+        self.changedStart.emit(self.startPos)
         self.viewport().update()
 
-    def drawForeground(self, painter, rect):
+    @property
+    def endPos(self) -> float:
+        return self._endPos
+
+    @endPos.setter
+    def endPos(self, value: float) -> None:
+        self._endPos = value
+        self.viewport().update()
+
+    def drawForeground(self, painter: QPainter, rect):
         painter.save()
-        penCursor = QPen(QColor('yellow'))
-        penCursor.setWidth(2)
-        painter.setPen(penCursor)
+        self.drawPlayCursor(painter)
+        self.drawStartPos(painter)
+        self.drawEndPos(painter)
+        painter.restore()
+
+    def drawPlayCursor(self, painter: QPainter):
+        pen = QPen(QColor('yellow'))
+        pen.setWidth(2)
+        painter.setPen(pen)
         p = self.chart().mapToPosition(QPointF(self.playCursor, 0.0))
         r = self.chart().plotArea()
         p1 = QPointF(p.x(), r.top())
         p2 = QPointF(p.x(), r.bottom())
         painter.drawLine(p1, p2)
-        penLimit = QPen(QColor('red'))
-        penLimit.setWidth(3)
-        painter.setPen(penLimit)
+
+    def drawStartPos(self, painter: QPainter):
+        pen = QPen(self.unselectedColor)
+        pen.setWidth(3)
+        painter.setPen(pen)
+        r = self.chart().plotArea()
         middle = (r.top() + r.bottom()) / 2.0
         startPoint = self.chart().mapToPosition(QPoint(self.startPos, middle))
+        painter.fillRect(
+            QRect(
+                QPoint(r.left(), r.top()),
+                QSize(startPoint.x() - r.left(), r.height())
+            ),
+            self.unselectedColorWithTransparency
+        )
         painter.drawEllipse(startPoint, 2.0, 2.0)
-        penLimit.setWidth(1)
-        p1 = QPointF(startPoint.x(), r.top())
-        p2 = QPointF(startPoint.x(), r.bottom())
-        painter.drawLine(p1, p2)
-        painter.restore()
+
+    def drawEndPos(self, painter: QPainter):
+        pen = QPen(self.unselectedColor)
+        pen.setWidth(3)
+        painter.setPen(pen)
+        r = self.chart().plotArea()
+        middle = (r.top() + r.bottom()) / 2.0
+        endPoint = self.chart().mapToPosition(QPoint(self.endPos, middle))
+        # print(f'endPoint: {endPoint}')
+        # print(f'endPos: {self.endPos}')
+        painter.fillRect(
+            QRect(
+                QPoint(endPoint.x(), r.top()),
+                QSize(abs(r.right() - endPoint.x()), r.height())
+            ),
+            self.unselectedColorWithTransparency
+        )
+        painter.drawEllipse(endPoint, 2.0, 2.0)
 
 
 class Soundwidget(QWidget):
@@ -92,7 +160,7 @@ class Soundwidget(QWidget):
         hBox.addWidget(self.chartView)
         self.setLayout(hBox)
 
-    def setUp(self, serie: QLineSeries):
+    def setUp(self, serie: QLineSeries, startPos: float, endPos: float):
         chart = QChart()
         chart.legend().hide()
         chart.addSeries(serie)
@@ -101,15 +169,14 @@ class Soundwidget(QWidget):
         axisX.setRange(0.0, lastPoint.x())
         axisX.setLabelFormat('%.2fs')
         chart.setAxisX(axisX, serie)
-        self.chartView.setChart(chart)
-        self.chartView.setMaximumHeight(200)
+        self.chartView.setChart(chart, startPos, endPos)
 
     @Slot(list)
-    def setSeries(self, points: list):
+    def setSeries(self, points: list, startPos: float, endPos: float):
         serie = QLineSeries()
         for point in points:
             serie.append(point[0], point[1])
-        self.setUp(serie)
+        self.setUp(serie, startPos, endPos)
 
     @Slot(CueInfo)
     def setPlayCursor(self, cueInfo: CueInfo) -> None:

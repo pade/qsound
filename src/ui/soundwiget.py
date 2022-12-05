@@ -18,8 +18,6 @@ class ChartView (QChartView):
         self._playCursor = 0.0
         self._startPos = 0.0
         self._endPos = 0.0
-        # self._firstPointX = 0.0
-        # self._lastPoint = 0.0
         self._moveInProgress = {'start': False, 'end': False}
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.setMinimumWidth(800)
@@ -28,26 +26,15 @@ class ChartView (QChartView):
 
     def setChart(self, chart: QChart, start: float, end: float) -> None:
         super().setChart(chart)
-        r = chart.plotArea()
-        print(f'{r.left()} / {r.right()}')
-        # self._firstPoint = self.chart().mapToPosition(QPointF(r.left(), 0.0))
-        # self._lastPoint = self.chart().mapToPosition(QPointF(r.right(), 0.0))
         self.startPos = start
         self.endPos = end
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         delta = 10.0
         mousePos = event.localPos()
-        # print(f'mouse.localPos(): {mousePos.x()}, {mousePos.y()}')    
         startPointPos = self.chart().mapToPosition(QPointF(self.startPos, 0.0))
         endPointPos = self.chart().mapToPosition(QPointF(self.endPos, 0.0))
-        print(f'endPointPos: {endPointPos}')
-        serie = (self.chart().series())[0]
-        print(f'{serie.points()[-1]}')
         leftButton = event.buttons() == Qt.MouseButton.LeftButton
-        # print(f'Mouse [{mousePos.x(), mousePos.y()}] / startPoint [{startPointPos.x(), startPointPos.y()}] / endPoint [{endPointPos.x(), endPointPos.y()}]')
-        # print(f'LastPoint {self._lastPoint}')
-        # print(f'firstPoint {self._firstPointX}')
         r = self.chart().plotArea()
         if not self._moveInProgress['start']:
             if abs(mousePos.x() - startPointPos.x()) < delta and leftButton:
@@ -107,14 +94,15 @@ class ChartView (QChartView):
         painter.restore()
 
     def drawPlayCursor(self, painter: QPainter):
-        pen = QPen(QColor('yellow'))
-        pen.setWidth(2)
-        painter.setPen(pen)
-        p = self.chart().mapToPosition(QPointF(self.playCursor, 0.0))
-        r = self.chart().plotArea()
-        p1 = QPointF(p.x(), r.top())
-        p2 = QPointF(p.x(), r.bottom())
-        painter.drawLine(p1, p2)
+        if self.playCursor != 0.0:
+            pen = QPen(QColor('yellow'))
+            pen.setWidth(2)
+            painter.setPen(pen)
+            p = self.chart().mapToPosition(QPointF(self.playCursor, 0.0))
+            r = self.chart().plotArea()
+            p1 = QPointF(p.x(), r.top())
+            p2 = QPointF(p.x(), r.bottom())
+            painter.drawLine(p1, p2)
 
     def drawStartPos(self, painter: QPainter):
         pen = QPen(self.unselectedColor)
@@ -122,7 +110,7 @@ class ChartView (QChartView):
         painter.setPen(pen)
         r = self.chart().plotArea()
         middle = (r.top() + r.bottom()) / 2.0
-        startPoint = self.chart().mapToPosition(QPoint(self.startPos, middle))
+        startPoint = self.chart().mapToPosition(QPointF(self.startPos, middle))
         painter.fillRect(
             QRect(
                 QPoint(r.left(), r.top()),
@@ -138,9 +126,7 @@ class ChartView (QChartView):
         painter.setPen(pen)
         r = self.chart().plotArea()
         middle = (r.top() + r.bottom()) / 2.0
-        endPoint = self.chart().mapToPosition(QPoint(self.endPos, middle))
-        # print(f'endPoint: {endPoint}')
-        # print(f'endPos: {self.endPos}')
+        endPoint = self.chart().mapToPosition(QPointF(self.endPos, middle))
         painter.fillRect(
             QRect(
                 QPoint(endPoint.x(), r.top()),

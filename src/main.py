@@ -1,4 +1,6 @@
 import sys
+import os
+import logging
 
 from PySide6.QtWidgets import QApplication
 
@@ -6,6 +8,10 @@ from ui.mainwindow import MainWindow
 
 
 def main():
+    if os.environ['DEBUG'] == 'true' or os.environ['DEBUG'] == 'True':
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.ERROR)
     app = QApplication(sys.argv)
 
     mainWindow = MainWindow()

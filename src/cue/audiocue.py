@@ -1,11 +1,13 @@
-from PySide6.QtCore import QFileInfo, Slot, Signal
-from cue.volume import Volume
-from cue.basecue import BaseCue
-from engine.player import Player
-from pydub import AudioSegment
-import numpy as np
 import array
 import math
+
+import numpy as np
+from pydub import AudioSegment
+from PySide6.QtCore import QFileInfo, Signal, Slot
+
+from cue.basecue import BaseCue
+from cue.volume import Volume
+from engine.player import Player, PlayerStates
 
 
 class CueInfo:
@@ -42,6 +44,8 @@ class AudioCue (BaseCue):
         self._audioPoints = []
         self._volume = Volume()
         self.audio = AudioSegment.empty()
+        self.player = None
+        self._playerState = None
         self.setSource(filename)
 
     def isValid(self):
@@ -53,13 +57,12 @@ class AudioCue (BaseCue):
         self._filename = filename
         self.audio = AudioSegment.from_file(self._filename)
         self._mixAudio = AudioSegment.empty() + self.audio
-        self.player = Player(self._mixAudio)
+        self.player = self.createPlayer(self._mixAudio)
         self.cueInfo = CueInfo(
             QFileInfo(self._filename).fileName(),
             self.audio.duration_seconds,
             0
         )
-        self.player.elapsedTime.connect(self.duration)
         audio1000Hz, _ = self.audio.set_frame_rate(1000).split_to_mono()
         samples = audio1000Hz.get_array_of_samples()
         buffer = array.array(audio1000Hz.array_type, samples)
@@ -83,6 +86,12 @@ class AudioCue (BaseCue):
     def getAudioPoints(self):
         return self._audioPoints
 
+    def createPlayer(self, audio: AudioSegment) -> Player:
+        player = Player(audio)
+        player.changedState.connect(self.setPlayerState)
+        player.elapsedTime.connect(self.duration)
+        return player
+
     @Slot(int)
     def duration(self, elapsed: int) -> None:
         self.cueInfo.elapsed = elapsed
@@ -94,11 +103,17 @@ class AudioCue (BaseCue):
 
     @Slot()
     def play(self):
+        if self._playerState == PlayerStates.Ended or self._playerState == PlayerStates.Stopped:
+            self.player = self.createPlayer(self._mixAudio)
         self.player.start()
 
     @Slot()
     def pause(self):
         self.player.pause()
+
+    @Slot(PlayerStates)
+    def setPlayerState(self, state: PlayerStates):
+        self._playerState = state
 
     def getStartsAt(self) -> float:
         return self._startsAt

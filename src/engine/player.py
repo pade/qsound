@@ -1,13 +1,23 @@
-from PySide6.QtCore import QObject, QUrl, QThread, Signal, Slot
+from enum import Enum
 from typing import Optional
+
 from pyaudio import PyAudio
 from pydub import AudioSegment
-from pydub.utils import make_chunks
+from PySide6.QtCore import QObject, QThread, Signal
+
+
+class PlayerStates (Enum):
+    NotStarted = 0
+    Playing = 1
+    Paused = 2
+    Stopped = 3
+    Ended = 4
 
 
 class Player (QThread):
 
     elapsedTime = Signal(int, name='elapsedTime')
+    changedState = Signal(PlayerStates, name='changedState')
     CHUNK_SIZE = 100
 
     def __init__(self, audio: AudioSegment, parent: Optional[QObject] = None) -> None:
@@ -22,6 +32,18 @@ class Player (QThread):
             rate=self._audio.frame_rate,
             output=True,
         )
+        self._playerOldState = None
+        self._playerState = None
+        self.setPlayerState(PlayerStates.NotStarted)
+
+    def setPlayerState(self, state: PlayerStates) -> None:
+        self._playerState = state
+        if self._playerOldState != self._playerState:
+            self._playerOldState = state
+            self.changedState.emit(self._playerState)
+
+    def getPlayerState(self) -> PlayerStates:
+        return self._playerState
 
     def run(self):
         try:
@@ -30,11 +52,14 @@ class Player (QThread):
                     data = self._audio[self._elapsedTime:self._elapsedTime+self.CHUNK_SIZE]
                     self.elapsedTime.emit(len(data) + self._elapsedTime)
                     if len(data) == 0:
+                        self.setPlayerState(PlayerStates.Ended)
                         self.requestInterruption()
                     else:
+                        self.setPlayerState(PlayerStates.Playing)
                         self._stream.write(data.raw_data)
                         self._elapsedTime += self.CHUNK_SIZE
                 else:
+                    self.setPlayerState(PlayerStates.Paused)
                     self.msleep(50)
         finally:
             self._stream.stop_stream()
@@ -54,14 +79,6 @@ class Player (QThread):
             super().start()
 
     def stop(self):
-        self.requestInterruption()
-
-    # def _loaded_frames(self, dataIn, frameCount, timeInfo, status):
-    #     print(f'frameCount: {frameCount}')
-    #     print(f'timeInfo: {timeInfo}')
-    #     print(f'status: {status}')
-    #     time = (frameCount / self.audio.frame_rate) * 1000.0
-    #     print(f'time: {time}')
-    #     data = self.audio[:time].raw_data
-    #     self.audio = self.audio[time:]
-    #     return (data, paContinue)
+        if self.getPlayerState() != PlayerStates.Ended:
+            self.setPlayerState(PlayerStates.Stopped)
+            self.requestInterruption()

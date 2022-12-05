@@ -28,6 +28,7 @@ class ChartView (QChartView):
         super().setChart(chart)
         self.startPos = start
         self.endPos = end
+        self.playCursor = 0.0
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         delta = 10.0
@@ -74,7 +75,6 @@ class ChartView (QChartView):
     @startPos.setter
     def startPos(self, value: float) -> None:
         self._startPos = value
-        self.changedStart.emit(self.startPos)
         self.viewport().update()
 
     @property

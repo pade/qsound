@@ -1,5 +1,6 @@
 import array
 import math
+import logging
 
 import numpy as np
 from pydub import AudioSegment
@@ -37,10 +38,10 @@ class AudioCue (BaseCue):
     def __init__(self, filename: str) -> None:
         super().__init__()
         self._filename = ''
-        self._startsAt = 0
-        self._endsAt = 0
-        self.__fadeInDuration = 0
-        self.__fadeOutDuration = 0
+        self._startsAt = 0.0
+        self._endsAt = 0.0
+        self.__fadeInDuration = 0.0
+        self.__fadeOutDuration = 0.0
         self._audioPoints = []
         self._volume = Volume()
         self.audio = AudioSegment.empty()
@@ -80,14 +81,14 @@ class AudioCue (BaseCue):
         left = left + self._volume.left
         right = right + self._volume.right
         rawData = AudioSegment.from_mono_audiosegments(left, right).raw_data
-        # Directly modify _data without to take into account modification while player is playing audio
+        # Directly modify _data to take into account modification while player is playing audio
         self._mixAudio._data = rawData
 
     def getAudioPoints(self):
         return self._audioPoints
 
     def createPlayer(self, audio: AudioSegment) -> Player:
-        player = Player(audio)
+        player = Player(audio, self.getStartsAt(), self.getEndsAt())
         player.changedState.connect(self.setPlayerState)
         player.elapsedTime.connect(self.duration)
         return player
@@ -114,24 +115,34 @@ class AudioCue (BaseCue):
     @Slot(PlayerStates)
     def setPlayerState(self, state: PlayerStates):
         self._playerState = state
+        logging.debug(f'Player state is "{state.name}"')
 
     def getStartsAt(self) -> float:
         return self._startsAt
 
     @Slot(float)
-    def setStartsAs(self, value: float) -> None:
-        if (value < 0.0):
-            value = 0.0
+    def setStartsAs(self, ms: float) -> None:
+        value = self._checkStartOrEndValue(ms)
+        # Stop player when changing start cursor
+        self.stop()
         self._startsAt = value
 
     def getEndsAt(self) -> float:
         return self._endsAt
 
     @Slot(float)
-    def setEndsAt(self, value: float) -> None:
-        if (value < 0.0):
-            value = 0.0
+    def setEndsAt(self, ms: float) -> None:
+        value = self._checkStartOrEndValue(ms)
+        # Stop player when changing end cursor
+        self.stop()
         self._endsAt = value
+
+    def _checkStartOrEndValue(self, ms: float):
+        if ms < 0.0:
+            ms = 0.0
+        if ms > len(self.audio):
+            ms = float(len(self.audio))
+        return ms
 
     def getFadeInDuration(self) -> float:
         return self.__fadeInDuration

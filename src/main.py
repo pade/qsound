@@ -8,7 +8,7 @@ from ui.mainwindow import MainWindow
 
 
 def main():
-    if os.environ['DEBUG'] == 'true' or os.environ['DEBUG'] == 'True':
+    if os.getenv('DEBUG') == 'true' or os.getenv('DEBUG') == 'True':
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.ERROR)

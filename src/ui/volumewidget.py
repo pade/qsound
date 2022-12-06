@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QCheckBox
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QCheckBox, QSizePolicy
 from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional
 from ui.volumeslider import VolumeSlider
@@ -13,13 +13,13 @@ class VolumeWidget (QWidget):
         super().__init__(parent, f)
         vBox = QVBoxLayout()
         hBox = QHBoxLayout()
-        w = QWidget()
-        w.setLayout(hBox)
         self.setLayout(vBox)
         self.left = VolumeSlider()
         self.right = VolumeSlider()
+        self.left.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         hBox.addWidget(self.left)
         hBox.addWidget(self.right)
+        hBox.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.right.slider.valueChanged.connect(self._volumeChange)
         self.left.slider.valueChanged.connect(self._volumeChange)
         self.checkBox = QCheckBox()
@@ -27,7 +27,8 @@ class VolumeWidget (QWidget):
         self.checkBox.stateChanged.connect(self._setSeparate)
         self.checkBox.setChecked(True)
         vBox.addWidget(self.checkBox)
-        vBox.addWidget(w)
+        vBox.addLayout(hBox)
+        vBox.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
     @Slot()
     def _setSeparate(self):

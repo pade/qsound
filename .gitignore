@@ -237,4 +237,7 @@ compile_commands.json
 .history
 .ionide
 
+# QTDesigner generated python files
+src/designer/*.py
+
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,qt

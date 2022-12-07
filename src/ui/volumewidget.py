@@ -1,8 +1,9 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QCheckBox, QSizePolicy
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QCheckBox, QSizePolicy, QLabel, QSpacerItem, QLineEdit
 from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional
 from ui.volumeslider import VolumeSlider
 from cue.volume import Volume
+from ui.fadewidget import FadeWidget
 
 
 class VolumeWidget (QWidget):
@@ -11,13 +12,19 @@ class VolumeWidget (QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
         super().__init__(parent, f)
-        vBox = QVBoxLayout()
-        hBox = QHBoxLayout()
-        self.setLayout(vBox)
+        mainHBox = QHBoxLayout()
+        vBoxVolume = QVBoxLayout()
+        hBoxVolmume = QHBoxLayout()
+        wVolume = QWidget()
+        wVolume.setLayout(vBoxVolume)
+        fade = FadeWidget()
+        mainHBox.addWidget(fade)
+        mainHBox.addWidget(wVolume)
+        self.setLayout(mainHBox)
         self.left = VolumeSlider(self.tr('L'))
         self.right = VolumeSlider(self.tr('R'))
-        hBox.addWidget(self.left, 0, Qt.AlignmentFlag.AlignLeft)
-        hBox.addWidget(self.right, 0, Qt.AlignmentFlag.AlignLeft)
+        hBoxVolmume.addWidget(self.left, 0, Qt.AlignmentFlag.AlignLeft)
+        hBoxVolmume.addWidget(self.right, 0, Qt.AlignmentFlag.AlignLeft)
         self.right.slider.valueChanged.connect(self._volumeChange)
         self.left.slider.valueChanged.connect(self._volumeChange)
         self.checkBox = QCheckBox()
@@ -25,8 +32,8 @@ class VolumeWidget (QWidget):
         self.checkBox.setText(self.tr('Split channels'))
         self.checkBox.stateChanged.connect(self._setSeparate)
         self.checkBox.setChecked(True)
-        vBox.addWidget(self.checkBox, 0, Qt.AlignmentFlag.AlignCenter)
-        vBox.addLayout(hBox)
+        vBoxVolume.addWidget(self.checkBox, 0, Qt.AlignmentFlag.AlignCenter)
+        vBoxVolume.addLayout(hBoxVolmume)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
     @Slot()

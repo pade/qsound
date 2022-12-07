@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, Slot, QObject
-from PySide6.QtGui import QValidator, QFontMetrics
+from PySide6.QtGui import QValidator
 from typing import Optional
 from ui.slider import BaseSlider
 
@@ -31,15 +31,12 @@ class VolumeSlider (BaseSlider):
     MAX = 200
     MIN = -500
 
-    def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
-        super().__init__(parent, f)
+    def __init__(self, label: str = None, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
+        super().__init__(label, parent, f)
         self.slider.setTickInterval(100)
         self.slider.setValue(0)
-        self.label.setText('0')
-        self.label.setValidator(SliderValidator(self.MIN, self.MAX))
-        fm = QFontMetrics(self.label.font())
-        # To have a fixed size that could contains 5 chars
-        self.label.setFixedWidth(fm.horizontalAdvance('-------'))
+        self.valueEdit.setText('0.0')
+        self.valueEdit.setValidator(SliderValidator(self.MIN, self.MAX))
 
     @Slot(int)
     def setSliderValue(self, value: str):
@@ -55,5 +52,5 @@ class VolumeSlider (BaseSlider):
             value = '-\u221E'
         else:
             value = value / 10.0
-        self.label.setText(str(value))
+        self.valueEdit.setText(str(value))
         self.adjustSize()

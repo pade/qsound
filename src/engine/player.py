@@ -6,6 +6,8 @@ from pyaudio import PyAudio
 from pydub import AudioSegment
 from PySide6.QtCore import QObject, QThread, Signal
 
+logger = logging.getLogger(__name__)
+
 
 class PlayerStates (Enum):
     NotStarted = 0
@@ -48,7 +50,7 @@ class Player (QThread):
 
     def run(self):
         try:
-            logging.debug(f'Playing from {self._startsAt}ms to {self._endsAt}ms')
+            logger.debug(f'Playing from {self._startsAt}ms to {self._endsAt}ms')
             while not self.isInterruptionRequested():
                 if not self._pause:
                     if self._elapsedTime >= self._endsAt:

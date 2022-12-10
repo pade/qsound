@@ -11,11 +11,15 @@ class BaseSlider(QWidget, Ui_baseSlider):
 
     def __init__(self, label: str = None, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
         super().__init__(parent, f)
+        self.labelText = label
         self.setupUi(self)
+
+    def setupUi(self, baseSlider):
+        super().setupUi(baseSlider)
         vBox = QVBoxLayout()
         self.setLayout(vBox)
-        if label:
-            self.label.setText(label)
+        if self.labelText:
+            self.label.setText(self.labelText)
         self.slider.setMaximum(self.MAX)
         self.slider.setMinimum(self.MIN)
         self.slider.valueChanged.connect(self.setLabelValue)

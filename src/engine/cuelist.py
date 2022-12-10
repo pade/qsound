@@ -6,6 +6,7 @@ from typing import Optional, Union
 from cue.audiocue import AudioCue
 import datetime
 
+
 class CueListModel (QAbstractListModel):
     def __init__(
         self,
@@ -22,12 +23,18 @@ class CueListModel (QAbstractListModel):
     def data(self, index: Union[QModelIndex, QPersistentModelIndex], role: int) -> str:
         audiocue = self._cuelist[index.row()]
         if role == Qt.ItemDataRole.DisplayRole:
-            return f'{index.row()} - {audiocue.getName()} [{audiocue.cueInfo.formatDuration()}]'
+            fade = audiocue.getFadeDuration()
+            fadeInText = f'\u279A {fade.fadeIn:.02f}' if fade.fadeIn else ''
+            fadeOutText = f'\u2798 {fade.fadeOut:.02f}' if fade.fadeOut else ''
+            return f'{index.row()} - {audiocue.getName()} {fadeInText} [{audiocue.cueInfo.formatDuration()}] {fadeOutText}'
         if role == Qt.ItemDataRole.ToolTipRole:
             return audiocue.getFullDescription()
 
     def addCue(self, cue: AudioCue) -> None:
         self._cuelist.append(cue)
+        self.updateLayout()
+
+    def updateLayout(self):
         self.layoutChanged.emit()
 
     def flags(self, index):

@@ -1,6 +1,7 @@
 import array
 import math
 import logging
+from copy import deepcopy
 
 import numpy as np
 from pydub import AudioSegment
@@ -9,6 +10,9 @@ from PySide6.QtCore import QFileInfo, Signal, Slot
 from cue.basecue import BaseCue
 from cue.volume import Volume
 from engine.player import Player, PlayerStates
+from cue.fade import Fade
+
+logger = logging.getLogger(__name__)
 
 
 class CueInfo:
@@ -33,15 +37,14 @@ class CueInfo:
 class AudioCue (BaseCue):
 
     changedCue = Signal(CueInfo, name='changedCue')
-    audioSignalChanged = Signal(list, float, float, name='audioSignalChanged')
+    ChangedAudioSignal = Signal(list, float, float, name='ChangedAudioSignal')
 
     def __init__(self, filename: str) -> None:
         super().__init__()
         self._filename = ''
         self._startsAt = 0.0
         self._endsAt = 0.0
-        self.__fadeInDuration = 0.0
-        self.__fadeOutDuration = 0.0
+        self._fade = Fade()
         self._audioPoints = []
         self._volume = Volume()
         self.audio = AudioSegment.empty()
@@ -58,7 +61,6 @@ class AudioCue (BaseCue):
         self._filename = filename
         self.audio = AudioSegment.from_file(self._filename)
         self._mixAudio = AudioSegment.empty() + self.audio
-        self.player = self.createPlayer(self._mixAudio)
         self.cueInfo = CueInfo(
             QFileInfo(self._filename).fileName(),
             self.audio.duration_seconds,
@@ -75,14 +77,25 @@ class AudioCue (BaseCue):
         self._audioPoints = np.stack((time, buffer), axis=-1).tolist()
         self.setStartsAs(0.0)
         self.setEndsAt(time[-1])
+        self.player = self.createPlayer(self._mixAudio)
 
     def _computeAudio(self):
         left, right = self.audio.split_to_mono()
         left = left + self._volume.left
         right = right + self._volume.right
-        rawData = AudioSegment.from_mono_audiosegments(left, right).raw_data
+        segment = AudioSegment.from_mono_audiosegments(left, right)
+        fadeIn = round(self.getFadeDuration().fadeIn * 1000)
+        fadeOut = round(self.getFadeDuration().fadeOut * 1000)
+        if fadeIn:
+            start = round(self.getStartsAt() * 1000)
+            segment = segment.fade(to_gain=0, from_gain=-120, start=start, duration=fadeIn)
+        if fadeOut:
+            end = round(self.getEndsAt() * 1000)
+            segment = segment.fade(to_gain=-120, from_gain=0, end=end, duration=fadeOut)
+
         # Directly modify _data to take into account modification while player is playing audio
-        self._mixAudio._data = rawData
+        self._mixAudio._data = segment.raw_data
+        logger.debug(f'{self.getName()} [{self.getVolume()}] ({self.getFadeDuration()}) - Starts at {self.getStartsAt()} / Ends at {self.getEndsAt()}')
 
     def getAudioPoints(self):
         return self._audioPoints
@@ -91,6 +104,7 @@ class AudioCue (BaseCue):
         player = Player(audio, self.getStartsAt(), self.getEndsAt())
         player.changedState.connect(self.setPlayerState)
         player.elapsedTime.connect(self.duration)
+        self._computeAudio()
         return player
 
     @Slot(int)
@@ -100,22 +114,25 @@ class AudioCue (BaseCue):
 
     @Slot()
     def stop(self):
-        self.player.stop()
+        if self.player:
+            self.player.stop()
 
     @Slot()
     def play(self):
         if self._playerState == PlayerStates.Ended or self._playerState == PlayerStates.Stopped:
             self.player = self.createPlayer(self._mixAudio)
-        self.player.start()
+        if self.player:
+            self.player.start()
 
     @Slot()
     def pause(self):
-        self.player.pause()
+        if self.player:
+            self.player.pause()
 
     @Slot(PlayerStates)
     def setPlayerState(self, state: PlayerStates):
         self._playerState = state
-        logging.debug(f'Player state is "{state.name}"')
+        logger.debug(f'{self.getName()}: Player state is "{state.name}"')
 
     def getStartsAt(self) -> float:
         return self._startsAt
@@ -144,23 +161,13 @@ class AudioCue (BaseCue):
             ms = float(len(self.audio))
         return ms
 
-    def getFadeInDuration(self) -> float:
-        return self.__fadeInDuration
+    @Slot(Fade)
+    def setFadeDuration(self, fade: Fade) -> None:
+        self._fade = fade
+        self._computeAudio()
 
-    @Slot(float)
-    def setFadeInDuration(self, value: float) -> None:
-        if (value < 0.0):
-            value = 0.0
-        self.__fadeInDuration = value
-
-    def getFadeOutDuration(self) -> float:
-        return self.__fadeOutDuration
-
-    @Slot(float)
-    def setFadeOutDuration(self, value: float) -> None:
-        if (value < 0.0):
-            value = 0.0
-        self.__fadeOutDuration = value
+    def getFadeDuration(self) -> Fade:
+        return self._fade
 
     def getVolume(self) -> Volume:
         return self._volume

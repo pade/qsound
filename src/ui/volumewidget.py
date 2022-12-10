@@ -3,12 +3,14 @@ from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional
 from ui.volumeslider import VolumeSlider
 from cue.volume import Volume
+from cue.fade import Fade
 from ui.fadewidget import FadeWidget
 
 
 class VolumeWidget (QWidget):
 
-    volume = Signal(Volume, name='volumeChanged')
+    volumeChanged = Signal(Volume, name='volumeChanged')
+    fadeChanged = Signal(Fade, name='fadeChanged')
 
     def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
         super().__init__(parent, f)
@@ -17,8 +19,9 @@ class VolumeWidget (QWidget):
         hBoxVolmume = QHBoxLayout()
         wVolume = QWidget()
         wVolume.setLayout(vBoxVolume)
-        fade = FadeWidget()
-        mainHBox.addWidget(fade)
+        self.fade = FadeWidget()
+        self.fade.valueChanged.connect(self._setFade)
+        mainHBox.addWidget(self.fade)
         mainHBox.addWidget(wVolume)
         self.setLayout(mainHBox)
         self.left = VolumeSlider(self.tr('L'))
@@ -53,7 +56,15 @@ class VolumeWidget (QWidget):
         self.right.slider.setValue(round(volume.right * 10))
         self.checkBox.setChecked(volume.separate)
 
+    def setFade(self, fade: Fade):
+        self.fade.fadeInEdit.setText(str(fade.fadeIn))
+        self.fade.fadeOutEdit.setText(str(fade.fadeOut))
+
+    @Slot(Fade)
+    def _setFade(self, fade: Fade):
+        self.fadeChanged.emit(Fade(fade.fadeIn, fade.fadeOut))
+
     @Slot()
     def _volumeChange(self):
-        self.volume.emit(Volume(self.checkBox.isChecked(), self.left.value() / 10.0, self.right.value() / 10.0))
+        self.volumeChanged.emit(Volume(self.checkBox.isChecked(), self.left.value() / 10.0, self.right.value() / 10.0))
 

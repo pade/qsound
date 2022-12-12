@@ -23,7 +23,7 @@ class Player (QThread):
     changedState = Signal(PlayerStates, name='changedState')
     CHUNK_SIZE = 100.0
 
-    def __init__(self, audio: AudioSegment, startsAt: float, endsAt: float, parent: Optional[QObject] = None) -> None:
+    def __init__(self, audio: AudioSegment, startsAt: float, endsAt: float, loop: int, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._audio = audio
         self._pause = False
@@ -38,6 +38,8 @@ class Player (QThread):
         self._playerState = None
         self._startsAt = round(startsAt * 1000)
         self._endsAt = round(endsAt * 1000)
+        self._loop = loop
+        self._repeatInfiny = self._loop == -1
         # Start playing at start cursor
         self._elapsedTime = self._startsAt
         self.setPlayerState(PlayerStates.NotStarted)
@@ -54,15 +56,23 @@ class Player (QThread):
             while not self.isInterruptionRequested():
                 if not self._pause:
                     if self._elapsedTime >= self._endsAt:
-                        self.setPlayerState(PlayerStates.Ended)
-                        self.requestInterruption()
+                        if self._repeatInfiny or self._loop > 0:
+                            self._loop = self._loop - 1
+                            self._elapsedTime = self._startsAt
+                        else:
+                            self.setPlayerState(PlayerStates.Ended)
+                            self.requestInterruption()
                     else:
                         segmentSize = min(self._endsAt, self._elapsedTime+self.CHUNK_SIZE)
                         data = self._audio[self._elapsedTime:segmentSize]
                         self.elapsedTime.emit(len(data) + self._elapsedTime)
                         if len(data) == 0:
-                            self.setPlayerState(PlayerStates.Ended)
-                            self.requestInterruption()
+                            if self._repeatInfiny or self._loop > 0:
+                                self._loop = self._loop - 1
+                                self._elapsedTime = self._startsAt
+                            else:
+                                self.setPlayerState(PlayerStates.Ended)
+                                self.requestInterruption()
                         else:
                             self.setPlayerState(PlayerStates.Playing)
                             self._stream.write(data.raw_data)

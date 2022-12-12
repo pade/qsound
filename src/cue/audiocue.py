@@ -45,6 +45,7 @@ class AudioCue (BaseCue):
         self._startsAt = 0.0
         self._endsAt = 0.0
         self._fade = Fade()
+        self._loop = 0
         self._audioPoints = []
         self._volume = Volume()
         self.audio = AudioSegment.empty()
@@ -101,11 +102,21 @@ class AudioCue (BaseCue):
         return self._audioPoints
 
     def createPlayer(self, audio: AudioSegment) -> Player:
-        player = Player(audio, self.getStartsAt(), self.getEndsAt())
+        player = Player(audio, self.getStartsAt(), self.getEndsAt(), self.getLoop())
         player.changedState.connect(self.setPlayerState)
         player.elapsedTime.connect(self.duration)
         self._computeAudio()
         return player
+
+    @Slot(int)
+    def setLoop(self, value: int) -> None:
+        if value < -1:
+            self._loop = 0
+        else:
+            self._loop = value
+
+    def getLoop(self):
+        return self._loop
 
     @Slot(int)
     def duration(self, elapsed: int) -> None:

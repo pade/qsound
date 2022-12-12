@@ -1,6 +1,6 @@
 UIC = pyside6-uic
 
-target = slider.py fade.py
+target = slider.py fade.py general.py
 
 .PHONY: all
 

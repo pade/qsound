@@ -37,20 +37,10 @@ class CueInfo:
 class AudioCue (BaseCue):
 
     changedCue = Signal(CueInfo, name='changedCue')
-    ChangedAudioSignal = Signal(list, float, float, name='ChangedAudioSignal')
+    audioSignalChanged = Signal(list, float, float, name='audioSignalChanged')
 
     def __init__(self, filename: str) -> None:
         super().__init__()
-        self._filename = ''
-        self._startsAt = 0.0
-        self._endsAt = 0.0
-        self._fade = Fade()
-        self._loop = 0
-        self._audioPoints = []
-        self._volume = Volume()
-        self.audio = AudioSegment.empty()
-        self.player = None
-        self._playerState = None
         self.setSource(filename)
 
     def isValid(self):
@@ -60,6 +50,15 @@ class AudioCue (BaseCue):
 
     def setSource(self, filename: str) -> None:
         self._filename = filename
+        self._startsAt = 0.0
+        self._endsAt = 0.0
+        self._fade = Fade()
+        self._loop = 0
+        self._audioPoints = []
+        self._volume = Volume()
+        self.audio = AudioSegment.empty()
+        self.player = None
+        self._playerState = None
         self.audio = AudioSegment.from_file(self._filename)
         self._mixAudio = AudioSegment.empty() + self.audio
         self.cueInfo = CueInfo(
@@ -199,6 +198,11 @@ class AudioCue (BaseCue):
         self._name = value
         self.cueInfo.name = value
         self.changedCue.emit(self.cueInfo)
+
+    @Slot(str)
+    def changeMediaFile(self, fileName: str) -> None:
+        self.stop()
+        self.setSource(fileName)
 
     def __str__(self) -> str:
         return f'{self.getName()}'

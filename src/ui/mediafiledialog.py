@@ -9,20 +9,26 @@ class MediaFileDialog (QObject):
 
     def __init__(self, parent) -> None:
         self.__settings = settings
-        self.__fileDialog = QFileDialog(parent)
-        self.__fileDialog.setNameFilter(self.tr('Audio (*.wav *.mp3 *.ogg)'))
-        self.__fileDialog.setViewMode(QFileDialog.ViewMode.List)
+        self._fileDialog = QFileDialog(parent)
+        self._fileDialog.setNameFilter(self.tr('Audio (*.wav *.mp3 *.ogg)'))
+        self._fileDialog.setViewMode(QFileDialog.ViewMode.List)
         directory = self.__settings.value(self.SETTING_KEY)
         if directory is None or not QDir(directory).exists():
             directory = QDir().homePath()
 
-        self.__fileDialog.setDirectory(directory)
-        self.__fileDialog.setWindowTitle(QFileDialog.tr('Select audio files'))
-        self.__fileDialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
+        self._fileDialog.setDirectory(directory)
+        self._fileDialog.setWindowTitle(QFileDialog.tr('Select audio files'))
+        self._fileDialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         # self.__fileDialog.setMimeTypeFilters(AudioCue.getSupportedMimeTypes())
 
     def getFilenames(self):
-        if self.__fileDialog.exec():
-            directory = self.__fileDialog.directory()
+        if self._fileDialog.exec():
+            directory = self._fileDialog.directory()
             self.__settings.setValue(self.SETTING_KEY, directory.absolutePath())
-            return self.__fileDialog.selectedFiles()
+            return self._fileDialog.selectedFiles()
+
+
+class ChangeMediaFile(MediaFileDialog):
+    def __init__(self, parent) -> None:
+        super().__init__(parent)
+        self._fileDialog.setFileMode(QFileDialog.FileMode.ExistingFile)

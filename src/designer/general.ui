@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>820</width>
+    <width>741</width>
     <height>365</height>
    </rect>
   </property>
@@ -167,10 +167,26 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout">
           <property name="spacing">
-           <number>20</number>
+           <number>-1</number>
           </property>
           <item>
            <widget class="QLineEdit" name="name"/>
+          </item>
+          <item>
+           <spacer name="verticalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>10</height>
+             </size>
+            </property>
+           </spacer>
           </item>
           <item>
            <widget class="QWidget" name="widget_3" native="true">

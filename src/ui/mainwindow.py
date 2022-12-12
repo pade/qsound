@@ -44,7 +44,6 @@ class MainWidget (QWidget):
         lastCue = None
         if self._cueListModel.currentIndex.isValid():
             lastCue = self._cueListModel.getCue(self._cueListModel.currentIndex)
-            logger.debug(f'Unselected cue {lastCue.getName()}')
             self.audioCueWidget.volume.disconnect(lastCue)
             self.audioCueWidget.general.disconnect(lastCue)
             self.audioCueWidget.sound.chartView.disconnect(lastCue)
@@ -55,13 +54,14 @@ class MainWidget (QWidget):
 
         self._cueListModel.currentIndex = index
         cue = self._cueListModel.getCue(index)
-        logger.debug(f'Selected cue {cue.getName()}')
 
         self.audioCueWidget.general.setOrder(index.row())
         self.audioCueWidget.general.setName(cue.getName())
         self.audioCueWidget.general.nameChanged.connect(cue.setName)
         self.audioCueWidget.general.setLoop(cue.getLoop())
         self.audioCueWidget.general.loopChanged.connect(cue.setLoop)
+        self.audioCueWidget.general.setFilename(cue.getFullDescription())
+        self.audioCueWidget.general.mediaFileChanged.connect(cue.changeMediaFile)
         self.audioCueWidget.volume.setVolume(cue.getVolume())
         self.audioCueWidget.volume.volumeChanged.connect(cue.setVolume)
         self.audioCueWidget.volume.setFade(cue.getFadeDuration())
@@ -70,7 +70,7 @@ class MainWidget (QWidget):
         self.audioCueWidget.sound.setSeries(cue.getAudioPoints(), cue.getStartsAt(), cue.getEndsAt())
         self.audioCueWidget.sound.chartView.changedStart.connect(cue.setStartsAs)
         self.audioCueWidget.sound.chartView.changedEnd.connect(cue.setEndsAt)
-        cue.ChangedAudioSignal.connect(self.audioCueWidget.sound.setSeries)
+        cue.audioSignalChanged.connect(self.audioCueWidget.sound.setSeries)
         cue.changedCue.connect(self.audioCueWidget.sound.setPlayCursor)
         self.commands.playBtn.pressed.connect(cue.play)
         self.commands.pauseBtn.pressed.connect(cue.pause)

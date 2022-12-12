@@ -3,7 +3,7 @@ from PySide6.QtCore import Qt, QRect, Slot
 from typing import Optional
 from ui.volumewidget import VolumeWidget
 from ui.soundwiget import Soundwidget
-
+from ui.generalwidget import GeneralWidget
 
 class AudioCueWidget (QWidget):
     def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
@@ -11,12 +11,15 @@ class AudioCueWidget (QWidget):
         self._tab = QTabWidget(self)
         self.volume = VolumeWidget()
         self.sound = Soundwidget()
+        self.general = GeneralWidget()
         hBox = QHBoxLayout()
         volume = QWidget()
         hBox.addWidget(self.volume, 0, Qt.AlignmentFlag.AlignLeft)
         volume.setLayout(hBox)
+        self._tab.addTab(self.general, self.tr('General'))
         self._tab.addTab(volume, self.tr('Volume'))
         self._tab.addTab(self.sound, self.tr('Sound'))
+
         # self._tab.currentChanged.connect(self.updateSizes)
         # self.volume.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
 

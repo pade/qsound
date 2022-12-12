@@ -1,5 +1,5 @@
 <RCC>
-  <qresource prefix="icons">
+  <qresource>
     <file>folder-music-outline.png</file>
     <file>folder-music.png</file>
   </qresource>

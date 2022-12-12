@@ -1,10 +1,9 @@
 from PySide6.QtCore import (
-    QAbstractListModel, QObject, Qt,
+    QAbstractListModel, QObject, Qt, Slot,
     QModelIndex, QPersistentModelIndex
 )
 from typing import Optional, Union
 from cue.audiocue import AudioCue
-import datetime
 
 
 class CueListModel (QAbstractListModel):
@@ -34,6 +33,7 @@ class CueListModel (QAbstractListModel):
         self._cuelist.append(cue)
         self.updateLayout()
 
+    @Slot()
     def updateLayout(self):
         self.layoutChanged.emit()
 

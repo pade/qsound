@@ -46,6 +46,9 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
          </widget>
         </item>
         <item row="2" column="0">
@@ -69,6 +72,9 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
          </widget>
         </item>
         <item row="3" column="0">
@@ -85,6 +91,9 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
@@ -120,7 +129,7 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>Numberrt of loop (-1 means infinity)^</string>
+           <string>Number of loop (-1 means indefinitely)</string>
           </property>
           <property name="minimum">
            <number>-1</number>
@@ -183,17 +192,38 @@
              </property>
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_3">
+               <property name="spacing">
+                <number>20</number>
+               </property>
                <item>
                 <widget class="QLineEdit" name="fileName"/>
                </item>
                <item>
                 <widget class="QPushButton" name="changeFilename">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>40</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Choose a new music file</string>
+                 </property>
                  <property name="text">
                   <string/>
                  </property>
                  <property name="icon">
-                  <iconset resource="ressources.qrc">
-                   <normaloff>:/icons/folder-music-outline.png</normaloff>:/icons/folder-music-outline.png</iconset>
+                  <iconset resource="../../assets/ressources.qrc">
+                   <normaloff>:/folder-music-outline.png</normaloff>:/folder-music-outline.png</iconset>
+                 </property>
+                 <property name="checkable">
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>
@@ -225,7 +255,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="ressources.qrc"/>
+  <include location="../../assets/ressources.qrc"/>
  </resources>
  <connections/>
 </ui>

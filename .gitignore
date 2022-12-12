@@ -238,5 +238,6 @@ compile_commands.json
 
 # QTDesigner generated python files
 src/designer/*.py
+assets/*.py
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,qt

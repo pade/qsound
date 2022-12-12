@@ -28,6 +28,7 @@ class MainWidget (QWidget):
         self.audioCueWidget = AudioCueWidget()
         self.audioCueWidget.setEnabled(False)
         self.audioCueWidget.volume.fadeChanged.connect(self._cueListModel.updateLayout)
+        self.audioCueWidget.general.nameChanged.connect(self._cueListModel.updateLayout)
         self.commands = CommandsWidget()
         hBox.addWidget(self._cueListView, 2)
         hBox.addWidget(self.commands, 1)
@@ -45,6 +46,7 @@ class MainWidget (QWidget):
             lastCue = self._cueListModel.getCue(self._cueListModel.currentIndex)
             logger.debug(f'Unselected cue {lastCue.getName()}')
             self.audioCueWidget.volume.disconnect(lastCue)
+            self.audioCueWidget.general.disconnect(lastCue)
             self.audioCueWidget.sound.chartView.disconnect(lastCue)
             self.commands.playBtn.disconnect(lastCue)
             self.commands.pauseBtn.disconnect(lastCue)
@@ -55,11 +57,14 @@ class MainWidget (QWidget):
         cue = self._cueListModel.getCue(index)
         logger.debug(f'Selected cue {cue.getName()}')
 
+        self.audioCueWidget.general.setOrder(index.row())
+        self.audioCueWidget.general.setName(cue.getName())
+        self.audioCueWidget.general.nameChanged.connect(cue.setName)
+        self.audioCueWidget.general.setLoop(cue.getLoop())
+        self.audioCueWidget.general.loopChanged.connect(cue.setLoop)
         self.audioCueWidget.volume.setVolume(cue.getVolume())
         self.audioCueWidget.volume.volumeChanged.connect(cue.setVolume)
         self.audioCueWidget.volume.setFade(cue.getFadeDuration())
-        # if lastCue:
-        #     logger.debug(f'==> 1  {lastCue.getName()}: {lastCue.getFadeDuration()}')
         self.audioCueWidget.volume.fadeChanged.connect(cue.setFadeDuration)
         
         self.audioCueWidget.sound.setSeries(cue.getAudioPoints(), cue.getStartsAt(), cue.getEndsAt())
@@ -70,8 +75,6 @@ class MainWidget (QWidget):
         self.commands.playBtn.pressed.connect(cue.play)
         self.commands.pauseBtn.pressed.connect(cue.pause)
         self.commands.stopBtn.pressed.connect(cue.stop)
-        # if lastCue:
-        #     logger.debug(f'==> 2  {lastCue.getName()}: {lastCue.getFadeDuration()}')
 
     def addCue(self, cue: AudioCue) -> None:
         self._cueListModel.addCue(cue)

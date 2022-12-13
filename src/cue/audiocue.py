@@ -109,6 +109,8 @@ class AudioCue (BaseCue):
 
     @Slot(int)
     def setLoop(self, value: int) -> None:
+        # Stop player when changing loop
+        self.stop()
         if value < -1:
             self._loop = 0
         else:

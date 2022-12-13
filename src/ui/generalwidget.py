@@ -15,6 +15,7 @@ class GeneralWidget(QWidget, Ui_Form):
     def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
         super().__init__(parent, f)
         self.setupUi(self)
+        self.loop.setSpecialValueText('\u221E')
         self.name.editingFinished.connect(self._setName)
         self.loop.valueChanged.connect(self._setLoop)
         self.changeFilename.clicked.connect(self._changeMediaFile)

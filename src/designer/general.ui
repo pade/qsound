@@ -72,6 +72,9 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="toolTip">
+           <string>Hotkey to start the cue</string>
+          </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
@@ -91,6 +94,9 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Hotkey to stop the cue</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -129,7 +135,10 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>Number of loop (-1 means indefinitely)</string>
+           <string>Number of loops</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
           <property name="minimum">
            <number>-1</number>
@@ -167,7 +176,11 @@
            <number>-1</number>
           </property>
           <item>
-           <widget class="QLineEdit" name="name"/>
+           <widget class="QLineEdit" name="name">
+            <property name="toolTip">
+             <string>Cue name</string>
+            </property>
+           </widget>
           </item>
           <item>
            <spacer name="verticalSpacer_4">

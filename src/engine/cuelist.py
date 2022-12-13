@@ -25,7 +25,9 @@ class CueListModel (QAbstractListModel):
             fade = audiocue.getFadeDuration()
             fadeInText = f'\u279A {fade.fadeIn:.02f}' if fade.fadeIn else ''
             fadeOutText = f'\u2798 {fade.fadeOut:.02f}' if fade.fadeOut else ''
-            return f'{index.row()} - {audiocue.getName()} {fadeInText} [{audiocue.cueInfo.formatDuration()}] {fadeOutText}'
+            loop = audiocue.getLoop()
+            loopText = '\u21BA' if loop else ''
+            return f'{index.row()} - {audiocue.getName()} {fadeInText} [{audiocue.cueInfo.formatDuration()}] {fadeOutText} {loopText}'
         if role == Qt.ItemDataRole.ToolTipRole:
             return audiocue.getFullDescription()
 

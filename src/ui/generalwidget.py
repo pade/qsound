@@ -1,9 +1,9 @@
 from designer.general import Ui_Form
 from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, Signal, Slot, QFileInfo, QDir
+from PySide6.QtCore import Qt, Signal, Slot, QFileInfo
 from typing import Optional
 from ui.mediafiledialog import ChangeMediaFile
-
+from PySide6.QtGui import QValidator
 
 
 class GeneralWidget(QWidget, Ui_Form):

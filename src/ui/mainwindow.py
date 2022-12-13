@@ -29,6 +29,7 @@ class MainWidget (QWidget):
         self.audioCueWidget.setEnabled(False)
         self.audioCueWidget.volume.fadeChanged.connect(self._cueListModel.updateLayout)
         self.audioCueWidget.general.nameChanged.connect(self._cueListModel.updateLayout)
+        self.audioCueWidget.general.loopChanged.connect(self._cueListModel.updateLayout)
         self.commands = CommandsWidget()
         hBox.addWidget(self._cueListView, 2)
         hBox.addWidget(self.commands, 1)

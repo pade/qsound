@@ -1,16 +1,16 @@
 class Volume:
-    def __init__(self, separate: bool = False, left: float = 0.0, right: float = 0.0) -> None:
+    def __init__(self, master: float = 0.0, left: float = 0.0, right: float = 0.0) -> None:
         self.__left = left
         self.__right = right
-        self.__separate = separate
+        self.__master = master
 
     @property
-    def separate(self) -> bool:
-        return self.__separate
+    def master(self) -> float:
+        return self.__master
 
-    @separate.setter
-    def separate(self, state: bool) -> None:
-        self.__separate = state
+    @master.setter
+    def master(self, value: float) -> None:
+        self.__master = value
 
     @property
     def left(self) -> float:
@@ -28,8 +28,8 @@ class Volume:
     def right(self, value: float) -> None:
         self.__right = value
 
-    def getVolume(self) -> tuple[float, float]:
-        return (self.left, self.right)
+    def getVolume(self) -> tuple[float, float, float]:
+        return (self.master, self.left, self.right)
 
     def __str__(self) -> str:
-        return f'left: {self.left}, right: {self.right}'
+        return f'{self.master} [{self.left} / {self.right}]'

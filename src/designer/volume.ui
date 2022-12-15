@@ -95,6 +95,12 @@
         <property name="toolTip">
          <string>Fade in duration, in seconds</string>
         </property>
+        <property name="inputMask">
+         <string notr="true">99:99</string>
+        </property>
+        <property name="text">
+         <string>00:00</string>
+        </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
@@ -110,6 +116,12 @@
         </property>
         <property name="toolTip">
          <string>Fade  out duration, in seconds</string>
+        </property>
+        <property name="inputMask">
+         <string>99:99</string>
+        </property>
+        <property name="text">
+         <string>00:00</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -127,6 +139,12 @@
         <property name="toolTip">
          <string>Number of seconds to wait before playing</string>
         </property>
+        <property name="inputMask">
+         <string>99:99:99</string>
+        </property>
+        <property name="text">
+         <string>00:00:00</string>
+        </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
@@ -141,7 +159,13 @@
          </sizepolicy>
         </property>
         <property name="toolTip">
-         <string>Number of seconds to wait before launching next cue</string>
+         <string>Number of minutes, seconds, ms to wait before launching next cue</string>
+        </property>
+        <property name="inputMask">
+         <string>99:99:99</string>
+        </property>
+        <property name="text">
+         <string>00:00:00</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

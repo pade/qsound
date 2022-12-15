@@ -57,30 +57,6 @@ class VolumeWidget (QWidget, Ui_Volume):
         self.masterEdit.setValidator(VolumeValidator())
         self.leftEdit.setValidator(VolumeValidator())
         self.rightEdit.setValidator(VolumeValidator())
-        # mainHBox = QHBoxLayout()
-        # vBoxVolume = QVBoxLayout()
-        # hBoxVolmume = QHBoxLayout()
-        # wVolume = QWidget()
-        # wVolume.setLayout(vBoxVolume)
-        # self.fade = FadeWidget()
-        # self.fade.valueChanged.connect(self._setFade)
-        # mainHBox.addWidget(self.fade)
-        # mainHBox.addWidget(wVolume)
-        # self.setLayout(mainHBox)
-        # self.left = VolumeSlider(self.tr('L'))
-        # self.right = VolumeSlider(self.tr('R'))
-        # hBoxVolmume.addWidget(self.left, 0, Qt.AlignmentFlag.AlignLeft)
-        # hBoxVolmume.addWidget(self.right, 0, Qt.AlignmentFlag.AlignLeft)
-        # self.right.slider.valueChanged.connect(self._volumeChange)
-        # self.left.slider.valueChanged.connect(self._volumeChange)
-        # self.checkBox = QCheckBox()
-        # self.checkBox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        # self.checkBox.setText(self.tr('Split channels'))
-        # self.checkBox.stateChanged.connect(self._setSeparate)
-        # self.checkBox.setChecked(True)
-        # vBoxVolume.addWidget(self.checkBox, 0, Qt.AlignmentFlag.AlignCenter)
-        # vBoxVolume.addLayout(hBoxVolmume)
-        # self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
     @Slot(Volume)
     def setVolume(self, volume: Volume):
@@ -89,8 +65,10 @@ class VolumeWidget (QWidget, Ui_Volume):
         self.masterSlider.setValue(round(volume.master * 10))
 
     def setFade(self, fade: Fade):
-        self.fadeInEdit.setText(str(fade.fadeIn))
-        self.fadeOutEdit.setText(str(fade.fadeOut))
+        fadeIn = min(99.99, fade.fadeIn)
+        fadeOut = min(99.99, fade.fadeOut)
+        self.fadeInEdit.setText(str(fadeIn).replace('.', ':'))
+        self.fadeOutEdit.setText(str(fadeOut).replace('.', ':'))
 
     @Slot()
     def _setMasterSliderValue(self):
@@ -126,7 +104,7 @@ class VolumeWidget (QWidget, Ui_Volume):
     def _setFade(self):
         try:
             self.fadeChanged.emit(
-                Fade(float(self.fadeInEdit.text()), float(self.fadeOutEdit.text()))
+                Fade(float(self.fadeInEdit.text().replace(':', '.')), float(self.fadeOutEdit.text().replace(':', '.')))
             )
         except ValueError:
             logger.error(f'Invalid fade value: "{self.fadeInEdit.text()}" or "{self.fadeOutEdit.text()}"')

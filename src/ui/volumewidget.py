@@ -67,8 +67,8 @@ class VolumeWidget (QWidget, Ui_Volume):
     def setFade(self, fade: Fade):
         fadeIn = min(99.99, fade.fadeIn)
         fadeOut = min(99.99, fade.fadeOut)
-        self.fadeInEdit.setText(str(fadeIn).replace('.', ':'))
-        self.fadeOutEdit.setText(str(fadeOut).replace('.', ':'))
+        self.fadeInEdit.setText(f'{fadeIn:4.2f}'.zfill(5).replace('.', ':'))
+        self.fadeOutEdit.setText(f'{fadeOut:4.2f}'.zfill(5).replace('.', ':'))
 
     @Slot()
     def _setMasterSliderValue(self):
@@ -95,7 +95,7 @@ class VolumeWidget (QWidget, Ui_Volume):
         self.rightEdit.setText(self._convertVolumeToString(value))
 
     def _convertVolumeToString(self, value: int):
-        if value <= Volume.MIN:
+        if value <= Volume.MIN * 10.0:
             return '-\u221E'
         else:
             return str(value / 10.0)

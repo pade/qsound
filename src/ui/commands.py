@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QSizePolicy
 from PySide6.QtCore import Qt
 from typing import Optional
 
@@ -15,4 +15,6 @@ class CommandsWidget(QWidget):
         vBox.addWidget(self.stopBtn)
         vBox.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.setLayout(vBox)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(sizePolicy)
         

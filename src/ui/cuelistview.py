@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QListView, QAbstractItemView, QSizePolicy, QWidget
-from PySide6.QtCore import QAbstractListModel
+from PySide6.QtCore import QAbstractListModel, QSize
 from typing import Optional
 
 
@@ -13,4 +13,8 @@ class CueListView (QListView):
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.setAlternatingRowColors(True)
         self.setModel(model)
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(sizePolicy)
+
+    def sizeHint(self) -> QSize:
+        return QSize(800, 400)

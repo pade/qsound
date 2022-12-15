@@ -1,10 +1,11 @@
 import logging
 from typing import Optional
 
-from PySide6.QtCore import QModelIndex, QSize, Qt, QTime, Slot
+from PySide6.QtCore import QModelIndex, QSize, Qt, QTime, Slot, QRect
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
-                               QMessageBox, QVBoxLayout, QWidget)
+                               QMessageBox, QVBoxLayout, QWidget, QSplitter,
+                               QSizePolicy)
 
 from cue.audiocue import AudioCue
 from engine.cuelist import CueListModel
@@ -20,24 +21,34 @@ logger = logging.getLogger(__name__)
 class MainWidget (QWidget):
     def __init__(self, parent: Optional[QWidget] = None, f: Qt.WindowType = Qt.WindowType.Widget) -> None:
         super().__init__(parent, f)
-        vBox = QVBoxLayout()
-        hBox = QHBoxLayout()
+        self.splitter = QSplitter(self)
+        splitterPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.splitter.setSizePolicy(splitterPolicy)
+        self.splitter.setGeometry(QRect(0, 0, 1000, 800))
+        self.splitter.setLineWidth(4)
+        self.splitter.setMidLineWidth(2)
+        self.splitter.setOrientation(Qt.Orientation.Vertical)
+
+        widget1 = QWidget(self.splitter)
+        widget1Layout = QHBoxLayout()
+        widget1.setLayout(widget1Layout)
         self._cueListModel = CueListModel()
         self._cueListView = CueListView(self._cueListModel)
+        widget1Layout.addWidget(self._cueListView, 66, Qt.AlignmentFlag.AlignCenter)
+        cueListSizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        cueListSizePolicy.setHorizontalStretch(66)
+        self._cueListView.setSizePolicy(cueListSizePolicy)
         self._cueListView.clicked.connect(self.selectedCue)
-        self.audioCueWidget = AudioCueWidget()
+        self.audioCueWidget = AudioCueWidget(self.splitter)
         self.audioCueWidget.setEnabled(False)
         self.audioCueWidget.volume.fadeChanged.connect(self._cueListModel.updateLayout)
         self.audioCueWidget.general.nameChanged.connect(self._cueListModel.updateLayout)
         self.audioCueWidget.general.loopChanged.connect(self._cueListModel.updateLayout)
         self.commands = CommandsWidget()
-        hBox.addWidget(self._cueListView, 2)
-        hBox.addWidget(self.commands, 1)
-        w = QWidget()
-        w.setLayout(hBox)
-        vBox.addWidget(w, 66)
-        vBox.addWidget(self.audioCueWidget, 33)
-        self.setLayout(vBox)
+        widget1Layout.addWidget(self.commands, 33, Qt.AlignmentFlag.AlignCenter)
+        commandWidgetSizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        commandWidgetSizePolicy.setHorizontalStretch(33)
+        self.commands.setSizePolicy(commandWidgetSizePolicy)
 
     @Slot(QModelIndex)
     def selectedCue(self, index: QModelIndex):

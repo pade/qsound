@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>539</width>
-    <height>296</height>
+    <width>538</width>
+    <height>284</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>284</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -86,6 +92,9 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="toolTip">
+         <string>Fade in duration, in seconds</string>
+        </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
@@ -98,6 +107,9 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>Fade  out duration, in seconds</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -112,6 +124,9 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="toolTip">
+         <string>Number of seconds to wait before playing</string>
+        </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
@@ -124,6 +139,9 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>Number of seconds to wait before launching next cue</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -205,10 +223,10 @@
             </size>
            </property>
            <property name="minimum">
-            <number>-400</number>
+            <number>-300</number>
            </property>
            <property name="maximum">
-            <number>120</number>
+            <number>200</number>
            </property>
            <property name="singleStep">
             <number>1</number>
@@ -277,10 +295,10 @@
          <item alignment="Qt::AlignHCenter">
           <widget class="QSlider" name="leftSlider">
            <property name="minimum">
-            <number>-400</number>
+            <number>-300</number>
            </property>
            <property name="maximum">
-            <number>120</number>
+            <number>200</number>
            </property>
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -346,10 +364,10 @@
          <item alignment="Qt::AlignHCenter">
           <widget class="QSlider" name="rightSlider">
            <property name="minimum">
-            <number>-400</number>
+            <number>-300</number>
            </property>
            <property name="maximum">
-            <number>120</number>
+            <number>200</number>
            </property>
            <property name="orientation">
             <enum>Qt::Vertical</enum>

@@ -12,9 +12,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-MIN = -400
-MAX = 120
-
 
 class VolumeValidator(QValidator):
     def __init__(self, parent: Optional[QObject] = None) -> None:
@@ -29,7 +26,7 @@ class VolumeValidator(QValidator):
             if value == '-':
                 return QValidator.State.Intermediate
             value = round(float(value) * 10)
-            if value < MIN or value > MAX:
+            if value < Volume.MIN or value > Volume.MAX:
                 return QValidator.State.Invalid
             return QValidator.State.Acceptable
         except ValueError:
@@ -120,7 +117,7 @@ class VolumeWidget (QWidget, Ui_Volume):
         self.rightEdit.setText(self._convertVolumeToString(value))
 
     def _convertVolumeToString(self, value: int):
-        if value <= MIN:
+        if value <= Volume.MIN:
             return '-\u221E'
         else:
             return str(value / 10.0)
@@ -128,7 +125,7 @@ class VolumeWidget (QWidget, Ui_Volume):
     @Slot()
     def _setFade(self):
         try:
-            self.valueChanged.emit(
+            self.fadeChanged.emit(
                 Fade(float(self.fadeInEdit.text()), float(self.fadeOutEdit.text()))
             )
         except ValueError:

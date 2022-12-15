@@ -80,10 +80,25 @@ class AudioCue (BaseCue):
         self.player = self.createPlayer(self._mixAudio)
 
     def _computeAudio(self):
-        left, right = self.audio.split_to_mono()
-        left = left + self._volume.left
-        right = right + self._volume.right
-        segment = AudioSegment.from_mono_audiosegments(left, right)
+        if self._volume.left or self._volume.right:
+            left, right = self.audio.split_to_mono()
+            if self._volume.left == Volume.MIN:
+                left = left - 120.0
+            else:
+                left = left + self._volume.left
+            if self._volume.right == Volume.MIN:
+                right = right - 120
+            else:
+                right = right + self._volume.right
+            segment = AudioSegment.from_mono_audiosegments(left, right)
+        else:
+            segment = self.audio
+        if self._volume.master:
+            if self._volume.master == Volume.MIN:
+                segment = segment - 120
+            else:
+                segment = segment + self._volume.master
+        
         fadeIn = round(self.getFadeDuration().fadeIn * 1000)
         fadeOut = round(self.getFadeDuration().fadeOut * 1000)
         if fadeIn:

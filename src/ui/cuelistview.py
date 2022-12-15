@@ -14,4 +14,3 @@ class CueListView (QListView):
         self.setAlternatingRowColors(True)
         self.setModel(model)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-    

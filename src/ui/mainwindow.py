@@ -35,8 +35,8 @@ class MainWidget (QWidget):
         hBox.addWidget(self.commands, 1)
         w = QWidget()
         w.setLayout(hBox)
-        vBox.addWidget(w, 66)
-        vBox.addWidget(self.audioCueWidget, 33)
+        vBox.addWidget(w, 1)
+        vBox.addWidget(self.audioCueWidget, 1)
         self.setLayout(vBox)
 
     @Slot(QModelIndex)

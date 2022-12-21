@@ -42,7 +42,7 @@ class AudioCue (BaseCue):
     def __init__(self, filename: str) -> None:
         super().__init__()
         app = QtWidgets.QApplication.instance()
-        app.aboutToQuit.connect(self.quit)create
+        app.aboutToQuit.connect(self.quit)
         self.player = None
         self.setSource(filename)
 

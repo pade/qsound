@@ -1,16 +1,16 @@
 import array
-import math
 import logging
-from copy import deepcopy
+import math
 
 import numpy as np
 from pydub import AudioSegment
 from PySide6.QtCore import QFileInfo, Signal, Slot
+from PySide6 import QtWidgets
 
 from cue.basecue import BaseCue
+from cue.fade import Fade
 from cue.volume import Volume
 from engine.player import Player, PlayerStates
-from cue.fade import Fade
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,15 @@ class AudioCue (BaseCue):
 
     def __init__(self, filename: str) -> None:
         super().__init__()
+        app = QtWidgets.QApplication.instance()
+        app.aboutToQuit.connect(self.quit)create
+        self.player = None
         self.setSource(filename)
+
+    @Slot()
+    def quit(self):
+        if self.player:
+            self.player.quit()
 
     def isValid(self):
         if not QFileInfo(self._filename).exists():
@@ -56,11 +64,9 @@ class AudioCue (BaseCue):
         self._loop = 0
         self._audioPoints = []
         self._volume = Volume()
-        self.audio = AudioSegment.empty()
-        self.player = None
-        self._playerState = None
-        self.audio = AudioSegment.from_file(self._filename)
-        self._mixAudio = AudioSegment.empty() + self.audio
+        if self.player:
+            self.player.quit()
+        self.audio: AudioSegment = AudioSegment.from_file(self._filename)
         self.cueInfo = CueInfo(
             QFileInfo(self._filename).fileName(),
             self.audio.duration_seconds,
@@ -75,61 +81,27 @@ class AudioCue (BaseCue):
             num=len(buffer)
         )
         self._audioPoints = np.stack((time, buffer), axis=-1).tolist()
-        self.setStartsAs(0.0)
-        self.setEndsAt(time[-1])
-        self.player = self.createPlayer(self._mixAudio)
-
-    def _computeAudio(self):
-        if self._volume.left or self._volume.right:
-            left, right = self.audio.split_to_mono()
-            if self._volume.left == Volume.MIN:
-                left = left - 120.0
-            else:
-                left = left + self._volume.left
-            if self._volume.right == Volume.MIN:
-                right = right - 120
-            else:
-                right = right + self._volume.right
-            segment = AudioSegment.from_mono_audiosegments(left, right)
-        else:
-            segment = self.audio
-        if self._volume.master:
-            if self._volume.master == Volume.MIN:
-                segment = segment - 120
-            else:
-                segment = segment + self._volume.master
-        
-        fadeIn = round(self.getFadeDuration().fadeIn * 1000)
-        fadeOut = round(self.getFadeDuration().fadeOut * 1000)
-        if fadeIn:
-            start = round(self.getStartsAt() * 1000)
-            segment = segment.fade(to_gain=0, from_gain=-120, start=start, duration=fadeIn)
-        if fadeOut:
-            end = round(self.getEndsAt() * 1000)
-            segment = segment.fade(to_gain=-120, from_gain=0, end=end, duration=fadeOut)
-
-        # Directly modify _data to take into account modification while player is playing audio
-        self._mixAudio._data = segment.raw_data
-        logger.debug(f'{self.getName()} [{self.getVolume()}] ({self.getFadeDuration()}) - Starts at {self.getStartsAt()} / Ends at {self.getEndsAt()}')
-
+        self._startsAt = 0.0
+        self._endsAt = self.audio.duration_seconds
+        self.player = Player(self.audio)
+        self.player.changedState.connect(self.setPlayerState)
+        self.player.elapsedTime.connect(self.duration)
+        self.player.start()
+        self.player.setLoop(self.getLoop())
+        self.player.setStart(self.getStartsAt())
+        self.player.setEnd(self.getEndsAt())
+        logger.debug('Player created')
+    
     def getAudioPoints(self):
         return self._audioPoints
 
-    def createPlayer(self, audio: AudioSegment) -> Player:
-        player = Player(audio, self.getStartsAt(), self.getEndsAt(), self.getLoop())
-        player.changedState.connect(self.setPlayerState)
-        player.elapsedTime.connect(self.duration)
-        self._computeAudio()
-        return player
-
     @Slot(int)
     def setLoop(self, value: int) -> None:
-        # Stop player when changing loop
-        self.stop()
         if value < -1:
             self._loop = 0
         else:
             self._loop = value
+        self.player.setLoop(value)
 
     def getLoop(self):
         return self._loop
@@ -146,19 +118,14 @@ class AudioCue (BaseCue):
 
     @Slot()
     def play(self):
-        if self._playerState == PlayerStates.Ended or self._playerState == PlayerStates.Stopped:
-            self.player = self.createPlayer(self._mixAudio)
-        if self.player:
-            self.player.start()
+        self.player.play()
 
     @Slot()
     def pause(self):
-        if self.player:
-            self.player.pause()
+        self.player.pause()
 
     @Slot(PlayerStates)
     def setPlayerState(self, state: PlayerStates):
-        self._playerState = state
         logger.debug(f'{self.getName()}: Player state is "{state.name}"')
 
     def getStartsAt(self) -> float:
@@ -166,32 +133,28 @@ class AudioCue (BaseCue):
 
     @Slot(float)
     def setStartsAs(self, ms: float) -> None:
-        value = self._checkStartOrEndValue(ms)
-        # Stop player when changing start cursor
-        self.stop()
-        self._startsAt = value
+        self._startsAt = self._convertStartOrEndValue(ms)
+        self.player.setStart(self._startsAt)
 
     def getEndsAt(self) -> float:
         return self._endsAt
 
     @Slot(float)
     def setEndsAt(self, ms: float) -> None:
-        value = self._checkStartOrEndValue(ms)
-        # Stop player when changing end cursor
-        self.stop()
-        self._endsAt = value
+        self._endsAt = self._convertStartOrEndValue(ms)
+        self.player.setEnd(self._endsAt)
 
-    def _checkStartOrEndValue(self, ms: float):
-        if ms < 0.0:
-            ms = 0.0
-        if ms > len(self.audio):
-            ms = float(len(self.audio))
-        return ms
+    def _convertStartOrEndValue(self, seconds: float):
+        if seconds < 0.0:
+            return 0.0
+        if seconds > self.audio.duration_seconds:
+            return self.audio.duration_seconds
+        return seconds
 
     @Slot(Fade)
     def setFadeDuration(self, fade: Fade) -> None:
         self._fade = fade
-        self._computeAudio()
+        self.player.setFade(fade)
 
     def getFadeDuration(self) -> Fade:
         return self._fade
@@ -202,7 +165,7 @@ class AudioCue (BaseCue):
     @Slot(Volume)
     def setVolume(self, volume: Volume) -> None:
         self._volume = volume
-        self._computeAudio()
+        self.player.setVolume(volume)
 
     def getName(self) -> str:
         return self.cueInfo.name

@@ -161,8 +161,7 @@ class MainWindow (QMainWindow):
 
     @Slot()
     def quit(self):
-        if self.beforeQuit:
-            QApplication.quit()
+        QApplication.quit()
 
     def beforeQuit(self) -> bool:
         if self.mayBeSaved():

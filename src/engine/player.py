@@ -2,7 +2,7 @@ import logging
 from multiprocessing import Process, Queue
 from queue import Full, Empty
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
 
 from pyaudio import PyAudio
 from pydub import AudioSegment
@@ -19,6 +19,49 @@ class PlayerStates (Enum):
     Paused = 2
     Stopped = 3
     Ended = 4
+
+
+class InvalidCommand(Exception):
+    pass
+
+
+class InvalidMessage(Exception):
+    pass
+
+
+class PlayerCommand:
+    availableCommands = [
+        'elapsedTime', 'state', 'quit',
+        'pause', 'play', 'stop', 'volume', 'fade', 'loop',
+        'setStart', 'setEnd'
+    ]
+
+    def __init__(self, command: str, value: Any | None = None) -> None:
+        if command in self.availableCommands:
+            self.command = command
+            self.value = value
+        else:
+            raise InvalidCommand
+
+    @classmethod
+    def fromMessage(cls, msg: dict):
+        if type(msg) is not dict:
+            raise InvalidMessage
+        try:
+            command = msg['command']
+        except KeyError:
+            raise InvalidMessage
+        value = msg.get('value')
+        return cls(command, value)
+
+    def toMessage(self):
+        if self.value is not None:
+            return {'command': self.command, 'value': self.value}
+        else:
+            return {'command': self.command}
+
+    def __str__(self) -> str:
+        return f'"{self.command}" ({self.value})'
 
 
 class Player (QThread):
@@ -40,46 +83,47 @@ class Player (QThread):
         process.start()
         while not self.isInterruptionRequested():
             try:
-                msg = self._queueFromProcess.get(block=True, timeout=0.5)
-                command = msg['command']
-                match command:
+                msg = PlayerCommand.fromMessage(self._queueFromProcess.get(block=True, timeout=0.5))
+                match msg.command:
                     case 'elapsedTime':
-                        logger.debug(f'Received command "elapsedTime" ({msg["value"]})')
-                        self.elapsedTime.emit(msg['value'])
+                        logger.debug(f'Received command "elapsedTime" ({msg.value})')
+                        self.elapsedTime.emit(msg.value)
                     case 'state':
-                        logger.debug(f'Received command "state" ({msg["value"]})')
-                        self.changedState.emit(msg['value'])
-            except (TypeError, KeyError):
+                        logger.debug(f'Received command "state" ({msg.value})')
+                        self.changedState.emit(msg.value)
+            except (InvalidMessage):
                 logger.error(f'Wrong message: "{msg}"')
             except Empty:
                 # No message received, nothing to do
                 pass
-        self._queueToProcess.put({'command': 'quit'})
+        self._queueToProcess.put(PlayerCommand('quit').toMessage())
         process.join()
 
     def pause(self):
-        self._queueToProcess.put({'command': 'pause'})
+        self._queueToProcess.put(PlayerCommand('pause').toMessage())
 
     def play(self):
-        self._queueToProcess.put({'command': 'play'})
+        self._queueToProcess.put(PlayerCommand('play').toMessage())
 
     def stop(self):
-        self._queueToProcess.put({'command': 'stop'})
+        self._queueToProcess.put(PlayerCommand('stop').toMessage())
 
     def setVolume(self, volume: Volume):
-        self._queueToProcess.put({'command': 'volume', 'value': volume})
+        self._queueToProcess.put(PlayerCommand('volume', volume).toMessage())
 
     def setFade(self, fade: Fade):
-        self._queueToProcess.put({'command': 'fade', 'value': fade})
+        self._queueToProcess.put(PlayerCommand('fade', fade).toMessage())
 
     def setLoop(self, loop: int):
-        self._queueToProcess.put({'command': 'loop', 'value': loop})
+        print(f'loop: {loop}')
+        print(PlayerCommand('loop', loop).toMessage())
+        self._queueToProcess.put(PlayerCommand('loop', loop).toMessage())
 
     def setStart(self, seconds: float):
-        self._queueToProcess.put({'command': 'setStart', 'value': seconds})
+        self._queueToProcess.put(PlayerCommand('setStart', seconds).toMessage())
 
     def setEnd(self, seconds: float):
-        self._queueToProcess.put({'command': 'setEnd', 'value': seconds})
+        self._queueToProcess.put(PlayerCommand('setEnd', seconds).toMessage())
 
     def quit(self):
         if self.isRunning():
@@ -124,10 +168,9 @@ class PlayerProcess:
             while True:
                 blocked = self._playerState != PlayerStates.Playing
                 try:
-                    msg = self.queueIn.get(block=blocked)
+                    msg = PlayerCommand.fromMessage(self.queueIn.get(block=blocked))
                     logger.debug(f'Receive message from main app.: "{msg}"')
-                    command = msg['command']
-                    match command:
+                    match msg.command:
                         case 'play':
                             self.setPlayerState(PlayerStates.Playing)
                         case 'pause':
@@ -135,25 +178,23 @@ class PlayerProcess:
                         case 'stop':
                             self.setPlayerState(PlayerStates.Stopped)
                         case 'volume':
-                            self._volume: Volume = msg['value']
+                            self._volume: Volume = msg.value
                         case 'fade':
-                            fade: Fade = msg['value']
+                            fade: Fade = msg.value
                             self.setPlayerState(PlayerStates.Stopped)
                             audioToPlay = self._applyFade(self._audio, fade)
                         case 'loop':
-                            self._loop = msg['value']
+                            self._loop = msg.value
                             self.setPlayerState(PlayerStates.Stopped)
                         case 'setStart':
-                            self._startsMs = msg['value'] * 1000.0
+                            self._startsMs = msg.value * 1000.0
                             self.setPlayerState(PlayerStates.Stopped)
                         case 'setEnd':
-                            self._endsMs = msg['value'] * 1000.0
+                            self._endsMs = msg.value * 1000.0
                             self.setPlayerState(PlayerStates.Stopped)
                         case 'quit':
                             self.setPlayerState(PlayerStates.Ended)
-                        case _:
-                            logger.error(f'Unknown command: "{command}"')
-                except (TypeError, KeyError):
+                except InvalidMessage:
                     logger.error(f'Wrong message: "{msg}"')
                 except Empty:
                     # No message received, nothing to do

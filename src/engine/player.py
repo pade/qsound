@@ -115,8 +115,6 @@ class Player (QThread):
         self._queueToProcess.put(PlayerCommand('fade', fade).toMessage())
 
     def setLoop(self, loop: int):
-        print(f'loop: {loop}')
-        print(PlayerCommand('loop', loop).toMessage())
         self._queueToProcess.put(PlayerCommand('loop', loop).toMessage())
 
     def setStart(self, seconds: float):
@@ -145,6 +143,7 @@ class PlayerProcess:
         self._playerState = PlayerStates.NotStarted
         self._playerOldState = None
         self._volume = Volume()
+        self.lastSentElapsedTime = 0
 
     def playerProcess(self, queueIn: Queue, queueOut: Queue):
         self.queueIn = queueIn
@@ -164,6 +163,7 @@ class PlayerProcess:
             repeatInfiny = loop == -1
             # Set playing at start cursor
             elapsedTime = self._startsMs
+            self.lastSentElapsedTime = elapsedTime
             logger.debug(f'Playing from {self._startsMs}ms to {self._endsMs}ms')
             while True:
                 blocked = self._playerState != PlayerStates.Playing
@@ -291,9 +291,14 @@ class PlayerProcess:
         return self._playerState
 
     def sendElapsedTime(self, elapsedTime: int) -> None:
-        try:
-            self.queueOut.put_nowait({'command': 'elapsedTime', 'value': elapsedTime})
-        except Full:
-            # Impossible to send elapsed time
-            # This is not a blocking point
-            pass
+        # Send elapsedTime only every 250ms
+        if abs(elapsedTime - self.lastSentElapsedTime) > 250:
+            try:
+                self.queueOut.put_nowait({'command': 'elapsedTime', 'value': elapsedTime})
+            except Full:
+                # Impossible to send elapsed time
+                # This is not a blocking point
+                pass
+            finally:
+                self.lastSentElapsedTime = elapsedTime
+

@@ -1,12 +1,13 @@
 from PySide6.QtCore import (
-    QAbstractListModel, QObject, Qt, Slot,
-    QModelIndex, QPersistentModelIndex
-)
-from typing import Optional, Union
+    QAbstractTableModel, QObject, Qt, Slot,
+    QModelIndex, QPersistentModelIndex)
+from PySide6.QtWidgets import QStyle, QWidget
+from typing import Optional, Union, Any
 from cue.audiocue import AudioCue
+from engine.player import PlayerStates
 
 
-class CueListModel (QAbstractListModel):
+class CueListModel (QAbstractTableModel):
     def __init__(
         self,
         cuelist: Optional[list[AudioCue]] = None,
@@ -19,17 +20,57 @@ class CueListModel (QAbstractListModel):
     def rowCount(self, index: Union[QModelIndex, QPersistentModelIndex]) -> int:
         return len(self._cuelist)
 
+    def columnCount(self, index: Union[QModelIndex, QPersistentModelIndex]) -> int:
+        return 6
+
     def data(self, index: Union[QModelIndex, QPersistentModelIndex], role: int) -> str:
         audiocue = self._cuelist[index.row()]
-        if role == Qt.ItemDataRole.DisplayRole:
-            fade = audiocue.getFadeDuration()
-            fadeInText = f'\u279A {fade.fadeIn:.02f}' if fade.fadeIn else ''
-            fadeOutText = f'\u2798 {fade.fadeOut:.02f}' if fade.fadeOut else ''
-            loop = audiocue.getLoop()
-            loopText = '\u21BA' if loop else ''
-            return f'{index.row()} - {audiocue.getName()} {fadeInText} [{audiocue.cueInfo.formatDuration()}] {fadeOutText} {loopText}'
-        if role == Qt.ItemDataRole.ToolTipRole:
-            return audiocue.getFullDescription()
+        match role:
+            case Qt.ItemDataRole.DisplayRole:
+                match index.column():
+                    case 0:
+                        return index.row()
+                    case 1:
+                        return audiocue.getName()
+                    case 2:
+                        fade = audiocue.getFadeDuration()
+                        return f'{fade.fadeIn:.02f}' if fade.fadeIn else ''
+                    case 3:
+                        return audiocue.cueInfo.formatDuration()
+                    case 4:
+                        fade = audiocue.getFadeDuration()
+                        return f'{fade.fadeOut:.02f}' if fade.fadeOut else ''
+                    case 5:
+                        return '\u21BA' if audiocue.getLoop() else ''
+            case Qt.ItemDataRole.DecorationRole:
+                if index.column() == 0:
+                    if audiocue.getPlayerState() == PlayerStates.Playing:
+                        pixmapi = QStyle.StandardPixmap.SP_MediaPlay
+                        icon = QWidget().style().standardIcon(pixmapi)
+                        return icon
+            case Qt.ItemDataRole.ToolTipRole:
+                return audiocue.getFullDescription()
+            case Qt.ItemDataRole.TextAlignmentRole:
+                if index.column() == 1:
+                    return Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+                return Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
+
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> Any:
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                match section:
+                    case 0:
+                        return 'N°'
+                    case 1:
+                        return 'Name'
+                    case 2:
+                        return 'Fade in'
+                    case 3:
+                        return 'Duration'
+                    case 4:
+                        return 'Fade out'
+                    case 5:
+                        return 'Loop'
 
     def addCue(self, cue: AudioCue) -> None:
         self._cuelist.append(cue)

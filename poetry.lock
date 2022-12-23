@@ -74,20 +74,6 @@ files = [
 ]
 
 [[package]]
-name = "cov-core"
-version = "1.15.0"
-description = "plugin core for use by pytest-cov, nose-cov and nose2-cov"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "cov-core-1.15.0.tar.gz", hash = "sha256:4a14c67d520fda9d42b0da6134638578caae1d374b9bb462d8de00587dba764c"},
-]
-
-[package.dependencies]
-coverage = ">=3.6"
-
-[[package]]
 name = "coverage"
 version = "7.0.0"
 description = "Code coverage measurement for Python"
@@ -292,37 +278,6 @@ files = [
     {file = "mccabe-0.7.0-py2.py3-none-any.whl", hash = "sha256:6c2d30ab6be0e4a46919781807b4f0d834ebdd6c6e3dca0bda5a15f863427b6e"},
     {file = "mccabe-0.7.0.tar.gz", hash = "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325"},
 ]
-
-[[package]]
-name = "nose2"
-version = "0.12.0"
-description = "unittest2 with plugins, the successor to nose"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "nose2-0.12.0-py2.py3-none-any.whl", hash = "sha256:da7eb5e3cbe2abb693a053e17b4fbefca98ea9ea79fc729b0b0f41e8b4196304"},
-    {file = "nose2-0.12.0.tar.gz", hash = "sha256:956e79b9bd558ee08b6200c05ad2c76465b7e3860c0c0537686089285c320113"},
-]
-
-[package.extras]
-coverage-plugin = ["coverage"]
-dev = ["Sphinx", "mock", "sphinx-issues", "sphinx-rtd-theme"]
-
-[[package]]
-name = "nose2-cov"
-version = "1.0a4"
-description = "nose2 plugin for coverage reporting, including subprocesses and multiprocessing"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "nose2-cov-1.0a4.tar.gz", hash = "sha256:4b707ebc4caff3292bf2a21ad6c1833b137a798a9045640adeec7965706b0f8f"},
-]
-
-[package.dependencies]
-cov-core = ">=1.6"
-nose2 = ">=0.1"
 
 [[package]]
 name = "numpy"
@@ -633,6 +588,25 @@ pluggy = ">=0.12,<2.0"
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
 
 [[package]]
+name = "pytest-cov"
+version = "4.0.0"
+description = "Pytest plugin for measuring coverage."
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pytest-cov-4.0.0.tar.gz", hash = "sha256:996b79efde6433cdbd0088872dbc5fb3ed7fe1578b68cdbba634f14bb8dd0470"},
+    {file = "pytest_cov-4.0.0-py3-none-any.whl", hash = "sha256:2feb1b751d66a8bd934e5edfa2e961d11309dc37b73b0eabe73b5945fee20f6b"},
+]
+
+[package.dependencies]
+coverage = {version = ">=5.2.1", extras = ["toml"]}
+pytest = ">=4.6"
+
+[package.extras]
+testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
+
+[[package]]
 name = "shiboken6"
 version = "6.4.1"
 description = "Python/C++ bindings helper module"
@@ -711,4 +685,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "bc3211f3991359b572a973801bf42a40de3427e7a053127e0e7559515c02db73"
+content-hash = "7be11bb83f30a0785cafe652a13268fa815bb2e9472798944973d3f0fe291cc8"

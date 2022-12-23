@@ -1,14 +1,15 @@
 import logging
-from multiprocessing import Process, Queue
-from queue import Full, Empty
 from enum import Enum
-from typing import Optional, Any
+from multiprocessing import Process, Queue
+from queue import Empty, Full
+from typing import Any, Optional
 
 from pyaudio import PyAudio
 from pydub import AudioSegment
 from PySide6.QtCore import QObject, QThread, Signal
-from cue.volume import Volume
+
 from cue.fade import Fade
+from cue.volume import Volume
 
 logger = logging.getLogger(__name__)
 

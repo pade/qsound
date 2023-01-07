@@ -44,7 +44,7 @@ class AudioCue (BaseCue):
         app = QtWidgets.QApplication.instance()
         app.aboutToQuit.connect(self.quit)
         self.player = None
-        self.playerState = PlayerStates.Stopped
+        self._state = PlayerStates.NotStarted
         self.setSource(filename)
 
     @Slot()
@@ -128,10 +128,7 @@ class AudioCue (BaseCue):
     @Slot(PlayerStates)
     def setPlayerState(self, state: PlayerStates):
         logger.debug(f'{self.getName()}: Player state is "{state.name}"')
-        self.playerState = state
-
-    def getPlayerState(self) -> PlayerStates:
-        return self.playerState
+        self._state = state
 
     def getStartsAt(self) -> float:
         return self._startsAt

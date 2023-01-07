@@ -1,66 +1,54 @@
-from PySide6.QtCore import (
-    QAbstractTableModel, QObject, Qt, Slot,
-    QModelIndex, QPersistentModelIndex)
+from typing import Any, Optional, Union, List
+
+from PySide6.QtCore import (QAbstractTableModel, QMimeData, QModelIndex,
+                            QObject, QPersistentModelIndex, Qt, Slot)
 from PySide6.QtWidgets import QStyle, QWidget
-from typing import Optional, Union, Any
-from cue.audiocue import AudioCue
+
+from cue.basecue import BaseCue
 from engine.player import PlayerStates
+from engine.cuelistitem import CueListItem
 
 
 class CueListModel (QAbstractTableModel):
     def __init__(
         self,
-        cuelist: Optional[list[AudioCue]] = None,
+        cuelist: Optional[CueListItem] = None,
         parent: Optional[QObject] = None
     ) -> None:
         super().__init__(parent)
-        self._cuelist = cuelist or []
+        self._cuelist: List[CueListItem] = cuelist or []
         self.currentIndex = QModelIndex()
 
-    def rowCount(self, index: Union[QModelIndex, QPersistentModelIndex]) -> int:
+    def rowCount(self, index: Union[QModelIndex, QPersistentModelIndex] = None) -> int:
         return len(self._cuelist)
 
-    def columnCount(self, index: Union[QModelIndex, QPersistentModelIndex]) -> int:
+    def columnCount(self, index: Union[QModelIndex, QPersistentModelIndex] = None) -> int:
         return 6
 
     def data(self, index: Union[QModelIndex, QPersistentModelIndex], role: int) -> str:
-        audiocue = self._cuelist[index.row()]
+        cueItem = self._cuelist[index.row()]
         match role:
             case Qt.ItemDataRole.DisplayRole:
-                match index.column():
-                    case 0:
-                        return index.row()
-                    case 1:
-                        return audiocue.getName()
-                    case 2:
-                        fade = audiocue.getFadeDuration()
-                        return f'{fade.fadeIn:.02f}' if fade.fadeIn else ''
-                    case 3:
-                        return audiocue.cueInfo.formatDuration()
-                    case 4:
-                        fade = audiocue.getFadeDuration()
-                        return f'{fade.fadeOut:.02f}' if fade.fadeOut else ''
-                    case 5:
-                        return '\u21BA' if audiocue.getLoop() else ''
-            case Qt.ItemDataRole.DecorationRole:
-                if index.column() == 0:
-                    if audiocue.getPlayerState() == PlayerStates.Playing:
-                        pixmapi = QStyle.StandardPixmap.SP_MediaPlay
-                        icon = QWidget().style().standardIcon(pixmapi)
-                        return icon
+                return cueItem.data[index.column()]
             case Qt.ItemDataRole.ToolTipRole:
-                return audiocue.getFullDescription()
+                return cueItem.getCue().getFullDescription()
             case Qt.ItemDataRole.TextAlignmentRole:
                 if index.column() == 1:
                     return Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
                 return Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
+            case Qt.ItemDataRole.DecorationRole:
+                if index.column() == 0:
+                    if cueItem.getCue().getCueState() == PlayerStates.Playing:
+                        pixmapi = QStyle.StandardPixmap.SP_MediaPlay
+                        icon = QWidget().style().standardIcon(pixmapi)
+                        return icon
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> Any:
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 match section:
                     case 0:
-                        return 'N°'
+                        return ''
                     case 1:
                         return 'Name'
                     case 2:
@@ -71,13 +59,17 @@ class CueListModel (QAbstractTableModel):
                         return 'Fade out'
                     case 5:
                         return 'Loop'
+            else:
+                return section
 
-    def addCue(self, cue: AudioCue) -> None:
-        self._cuelist.append(cue)
+    def addCue(self, cue: BaseCue) -> None:
+        self._cuelist.append(CueListItem(cue))
         self.updateLayout()
 
     @Slot()
     def updateLayout(self):
+        for item in self._cuelist:
+            item.setValue()
         self.layoutChanged.emit()
 
     def flags(self, index):
@@ -108,18 +100,43 @@ class CueListModel (QAbstractTableModel):
             or count != 1\
                 or sourceParent.isValid() or destinationParent.isValid():
             return False
-
         if not self.beginMoveRows(QModelIndex(), sourceRow, sourceRow, QModelIndex(), destinationChild):
             return False
         self._cuelist.insert(destinationChild, self._cuelist.pop(sourceRow))
         self.endMoveRows()
         return True
 
-    def getCue(self, index: QModelIndex) -> AudioCue:
+    def insertRows(self, row: int, count: int, parent: Union[QModelIndex, QPersistentModelIndex] = None) -> bool:
+        if count != 1:
+            return False
+        self.beginInsertRows(QModelIndex(), row, row)
+        self._cuelist.insert(row, CueListItem(BaseCue()))
+        self.endInsertRows()
+        return True
+
+    def removeRows(self, row: int, count: int, parent: Union[QModelIndex, QPersistentModelIndex] = None) -> bool:
+        self.beginMoveRows(QModelIndex(), row, row + count - 1)
+        del self._cuelist[row: row + count]
+        self.endRemoveRows()
+        return True
+
+    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: Union[QModelIndex, QPersistentModelIndex]) -> bool:
+        print(data.text())
+        if parent.isValid():
+            newParent = QModelIndex()
+            row = parent.row() + 1
+        else:
+            newParent = parent
+
+        if row == -1:
+            row = self.rowCount()
+        return super().dropMimeData(data, action, row, 0, newParent)
+
+    def getCue(self, index: QModelIndex) -> BaseCue:
         if index.isValid():
-            return self._cuelist[index.row()]
+            return (self._cuelist[index.row()]).getCue()
         else:
             return None
 
-    def getAllCue(self) -> list[AudioCue]:
-        return self._cuelist
+    def getAllCue(self) -> list[BaseCue]:
+        return list(map(lambda x: x.getCue(), self._cuelist))

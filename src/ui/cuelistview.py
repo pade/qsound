@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QTableView, QAbstractItemView, QSizePolicy, QWidget
-from PySide6.QtCore import QAbstractListModel, Slot
+from PySide6.QtCore import QAbstractListModel, Qt
 from typing import Optional
 
 
@@ -11,9 +11,12 @@ class CueListView (QTableView):
         self.setAcceptDrops(True)
         self.setDropIndicatorShown(True)
         self.setSortingEnabled(False)
+        self.viewport().setAcceptDrops(True)
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setAlternatingRowColors(True)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.setDragDropMode(QTableView.DragDropMode.InternalMove)
         self.setModel(model)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.setColumnWidth(0, 30)

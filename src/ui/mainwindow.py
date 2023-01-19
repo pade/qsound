@@ -44,7 +44,7 @@ class MainWidget (QWidget):
         self.audioCueWidget.setEnabled(True)
         lastCue = None
         if self._cueListModel.currentIndex.isValid():
-            lastCue = self._cueListModel.getCue(self._cueListModel.currentIndex)
+            lastCue = self._cueListModel.getCue(self._cueListModel.currentIndex.row())
             self.audioCueWidget.volume.volumeChanged.disconnect(lastCue.setVolume)
             self.audioCueWidget.volume.fadeChanged.disconnect(lastCue.setFadeDuration)
 
@@ -59,7 +59,7 @@ class MainWidget (QWidget):
             lastCue.changedCue.disconnect(self.audioCueWidget.sound.setPlayCursor)
 
         self._cueListModel.currentIndex = index
-        cue = self._cueListModel.getCue(index)
+        cue = self._cueListModel.getCue(index.row())
 
         self.audioCueWidget.general.setOrder(index.row())
         self.audioCueWidget.general.setName(cue.getName())

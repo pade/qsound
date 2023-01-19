@@ -1,47 +1,78 @@
+import logging
+import uuid
 from typing import Any, Optional, Union, List
 
 from PySide6.QtCore import (QAbstractTableModel, QMimeData, QModelIndex,
                             QObject, QPersistentModelIndex, Qt, Slot)
 from PySide6.QtWidgets import QStyle, QWidget
 
+from cue.audiocue import AudioCue
 from cue.basecue import BaseCue
-from engine.player import PlayerStates
 from engine.cuelistitem import CueListItem
+from engine.player import PlayerStates
+
+logger = logging.getLogger(__name__)
+
+
+class CueList:
+    def __init__(self) -> None:
+        self._data = {}
+
+    def append(self, cue: BaseCue) -> str:
+        id = str(uuid.uuid4())
+        self._data[id] = cue
+        return id
+
+    def remove(self, id: str) -> str:
+        try:
+            self._data.pop(id)
+        except KeyError:
+            logger.error(f'Key \'{id}\' not found')
+
+    def getCue(self, id: str) -> BaseCue:
+        try:
+            return self._data[id]
+        except KeyError:
+            logger.error(f'Key \'{id}\' not found')
+            return None
+
+    def getListOfCue(self) -> List[BaseCue]:
+        return list(self._data.values())
 
 
 class CueListModel (QAbstractTableModel):
-    def __init__(
-        self,
-        cuelist: Optional[CueListItem] = None,
-        parent: Optional[QObject] = None
-    ) -> None:
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
-        self._cuelist: List[CueListItem] = cuelist or []
         self.currentIndex = QModelIndex()
+        self._data = []
+        self._cueList = CueList()
+        pixmapi = QStyle.StandardPixmap.SP_MediaPlay
+        self._playIcon = QWidget().style().standardIcon(pixmapi)
 
     def rowCount(self, index: Union[QModelIndex, QPersistentModelIndex] = None) -> int:
-        return len(self._cuelist)
+        return len(self._data)
 
     def columnCount(self, index: Union[QModelIndex, QPersistentModelIndex] = None) -> int:
         return 6
 
     def data(self, index: Union[QModelIndex, QPersistentModelIndex], role: int) -> str:
-        cueItem = self._cuelist[index.row()]
+        cue = self.getCue(index.row())
+        if cue is None:
+            return
         match role:
             case Qt.ItemDataRole.DisplayRole:
-                return cueItem.data[index.column()]
+                if index.column() < 6:
+                    return self._data[index.row()][index.column()]
             case Qt.ItemDataRole.ToolTipRole:
-                return cueItem.getCue().getFullDescription()
+                return cue.getFullDescription()
             case Qt.ItemDataRole.TextAlignmentRole:
                 if index.column() == 1:
                     return Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
                 return Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
             case Qt.ItemDataRole.DecorationRole:
                 if index.column() == 0:
-                    if cueItem.getCue().getCueState() == PlayerStates.Playing:
-                        pixmapi = QStyle.StandardPixmap.SP_MediaPlay
-                        icon = QWidget().style().standardIcon(pixmapi)
-                        return icon
+                    if cue.getCueState() == PlayerStates.Playing:
+                        return self._playIcon
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> Any:
         if role == Qt.DisplayRole:
@@ -63,13 +94,43 @@ class CueListModel (QAbstractTableModel):
                 return section
 
     def addCue(self, cue: BaseCue) -> None:
-        self._cuelist.append(CueListItem(cue))
+        id = self._cueList.append(cue)
+        self.setCueData(id, cue)
         self.updateLayout()
 
+    def setCueData(self, id: str, cue: BaseCue) -> None:
+        data = [None] * 7
+        data[0] = ''
+        data[1] = cue.getName()
+        if isinstance(cue, AudioCue):
+            fade = cue.getFadeDuration()
+            data[2] = f'{fade.fadeIn:.02f}'
+            data[3] = cue.cueInfo.formatDuration()
+            data[4] = f'{fade.fadeOut:.02f}'
+            data[5] = '\u21BA' if cue.getLoop() else ''
+        else:
+            data[2:6] = ['', '', '', '']
+        data[6] = id
+        index = self._getIndexOfId(id)
+        logger.debug(f'Index: {index}')
+        if index != -1:
+            self._data[index] = data
+        else:
+            self._data.append(data)
+        logger.debug(f'self._data: {self._data}')
+
+    def _getIndexOfId(self, id: str) -> int:
+        for index, item in enumerate(self._data):
+            if item[6] == id:
+                return index
+        return -1
+     
     @Slot()
     def updateLayout(self):
-        for item in self._cuelist:
-            item.setValue()
+        for index, item in enumerate(self._data):
+            cue = self.getCue(index)
+            self.setCueData(item[6], cue)
+
         self.layoutChanged.emit()
 
     def flags(self, index):
@@ -110,7 +171,7 @@ class CueListModel (QAbstractTableModel):
         if count != 1:
             return False
         self.beginInsertRows(QModelIndex(), row, row)
-        self._cuelist.insert(row, CueListItem(BaseCue()))
+        self._data.insert(row, CueListItem(BaseCue()))
         self.endInsertRows()
         return True
 
@@ -132,11 +193,8 @@ class CueListModel (QAbstractTableModel):
             row = self.rowCount()
         return super().dropMimeData(data, action, row, 0, newParent)
 
-    def getCue(self, index: QModelIndex) -> BaseCue:
-        if index.isValid():
-            return (self._cuelist[index.row()]).getCue()
-        else:
-            return None
+    def getCue(self, index: int) -> BaseCue:
+        return self._cueList.getCue(self._data[index][6])
 
-    def getAllCue(self) -> list[BaseCue]:
-        return list(map(lambda x: x.getCue(), self._cuelist))
+    def getAllCues(self) -> list[BaseCue]:
+        return self._cueList.getListOfCue()

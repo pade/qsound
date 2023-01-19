@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
                                QMessageBox, QVBoxLayout, QWidget)
 
 from cue.audiocue import AudioCue
-from engine.cuelist import CueListModel
+from engine.cuelistmodel import CueListModel
 from settings import settings
 from ui.audiocuewidget import AudioCueWidget
 from ui.commands import CommandsWidget
@@ -89,7 +89,7 @@ class MainWidget (QWidget):
         # self.selectedCue(lastIndex)
 
     def stop(self):
-        for cue in self._cueListModel.getAllCue():
+        for cue in self._cueListModel.getAllCues():
             cue.stop()
 
 
